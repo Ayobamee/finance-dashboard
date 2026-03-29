@@ -505,7 +505,7 @@ body{
 
 <!-- TOP NAV -->
 <div class="topnav">
-  <div class="brand">Quales<span>Consulting</span> Finance</div>
+  <div class="brand">Quales<span>Tech</span> Finance</div>
   <div class="navtab active" onclick="showScreen('dashboard',this)">P&amp;L Dashboard</div>
   <div class="navtab" onclick="showScreen('entry',this)">Data Entry</div>
   <div class="navtab" onclick="showScreen('yearview',this)">Year Overview</div>
@@ -1082,19 +1082,53 @@ function renderDashboard() {
 function renderEntry() {
   const d = getM(currentYear, currentMonth);
   renderClients(d);
-  renderList('cexp-list', d.cexp,     e => `<span class="elab">${e.cat}</span><span class="eamt neg">${fmtFull(e.amt)}</span>`, 'cexp');
-  renderList('lrev-list', d.lrev,     e => `<span class="elab">${e.src}</span><span class="eamt pos">${fmtFull(e.amt)}</span>`, 'lrev');
-  renderList('lexp-list', d.lexp,     e => `<span class="elab">${e.cat}</span><span class="eamt neg">${fmtFull(e.amt)}</span>`, 'lexp');
-  renderList('sal-list',  d.salaries, e => `<span class="elab">${e.name} <span style="color:var(--ink3);font-size:11px">${e.type}</span></span><span class="eamt neg">${fmtFull(e.amt)}</span>`, 'salaries');
-  renderList('bon-list',  d.bonuses,  e => `<span class="elab">${e.desc}</span><span class="eamt neg">${fmtFull(e.amt)}</span>`, 'bonuses');
+  renderEditableList('cexp-list', d.cexp,     'cexp',     [
+    { field:'cat', label:'Category',    type:'text',   flex:1 },
+    { field:'amt', label:'Amount (₦)',  type:'number', width:'110px', prefix:'₦' }
+  ]);
+  renderEditableList('lrev-list', d.lrev,     'lrev',     [
+    { field:'src', label:'Source',      type:'text',   flex:1 },
+    { field:'amt', label:'Amount (₦)',  type:'number', width:'110px', prefix:'₦' }
+  ]);
+  renderEditableList('lexp-list', d.lexp,     'lexp',     [
+    { field:'cat', label:'Category',    type:'text',   flex:1 },
+    { field:'amt', label:'Amount (₦)',  type:'number', width:'110px', prefix:'₦' }
+  ]);
+  renderEditableList('sal-list',  d.salaries, 'salaries', [
+    { field:'name', label:'Name',       type:'text',   flex:1 },
+    { field:'type', label:'Type',       type:'select', width:'130px', options:['Core Staff','Outsourced Talent'] },
+    { field:'amt',  label:'Amount (₦)', type:'number', width:'110px', prefix:'₦' }
+  ]);
+  renderEditableList('bon-list',  d.bonuses,  'bonuses',  [
+    { field:'desc', label:'Description', type:'text',  flex:1 },
+    { field:'amt',  label:'Amount (₦)', type:'number', width:'110px', prefix:'₦' }
+  ]);
 }
 
-function renderList(id, arr, renderFn, key) {
+function renderEditableList(id, arr, key, cols) {
   const el = document.getElementById(id);
   if (!arr || !arr.length) { el.innerHTML = '<div class="empty-state">No entries yet</div>'; return; }
-  el.innerHTML = arr.map((e, i) =>
-    `<div class="entry-item">${renderFn(e)}<button class="btn-del" onclick="delEntry('${key}',${i})">✕</button></div>`
-  ).join('');
+  el.innerHTML = arr.map((e, i) => {
+    const cells = cols.map(col => {
+      const w   = col.width ? `style="width:${col.width};flex-shrink:0"` : `style="flex:${col.flex||1}"`;
+      const val = e[col.field] || '';
+      if (col.type === 'select') {
+        const opts = col.options.map(o => `<option${o===val?' selected':''}>${o}</option>`).join('');
+        return `<div ${w}><select class="talent-input" onchange="updateEntry('${key}',${i},'${col.field}',this.value)" style="width:100%;font-size:12px">${opts}</select></div>`;
+      }
+      const isNum = col.type === 'number';
+      const pre   = col.prefix ? `<span style="position:absolute;left:7px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--ink3);pointer-events:none">₦</span>` : '';
+      const pl    = isNum ? '0' : (col.label || '');
+      return `<div ${w} style="position:relative">${pre}<input class="talent-input${isNum?' rate':''}" type="${col.type}" value="${val}" placeholder="${pl}" ${isNum?'min="0"':''} style="${col.prefix?'padding-left:18px;':''}" onchange="updateEntry('${key}',${i},'${col.field}',this.value)"></div>`;
+    }).join('');
+    return `<div class="talent-row" style="display:flex;gap:8px;align-items:center;padding:6px 4px;border-bottom:1px solid rgba(0,0,0,0.05)">${cells}<button class="btn-del" style="padding:3px 7px;flex-shrink:0" onclick="delEntry('${key}',${i})">✕</button></div>`;
+  }).join('');
+}
+
+function updateEntry(key, i, field, val) {
+  const e = getM(currentYear, currentMonth)[key][i];
+  e[field] = (field === 'amt') ? parseFloat(val)||0 : val;
+  saveData(); renderDashboard();
 }
 
 function renderClients(d) {
