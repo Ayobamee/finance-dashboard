@@ -639,18 +639,25 @@ body{
   </div>
 
   <!-- Salary Breakdown -->
-  <div class="card">
+  <div class="card" style="margin-bottom:20px">
     <div class="card-title"><span class="dot dot-gold"></span>Salary &amp; Staff Costs — Consulting Division</div>
     <table class="mini-table">
-      <thead><tr><th>Name / Group</th><th>Type</th><th>Amount (₦)</th></tr></thead>
+      <thead><tr><th>Name / Group</th><th>Type</th><th>Client</th><th>Amount (₦)</th></tr></thead>
       <tbody id="salary-rows"></tbody>
       <tfoot>
         <tr class="total-row">
-          <td colspan="2">Total Salaries &amp; Bonuses</td>
+          <td colspan="3">Total Salaries &amp; Bonuses</td>
           <td id="salary-total" class="neg">₦0</td>
         </tr>
       </tfoot>
     </table>
+  </div>
+
+  <!-- Gross Margin per Talent -->
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:#0b7285"></span>Gross Margin per Outsourced Talent</div>
+    <p style="font-size:12px;color:var(--ink3);margin-bottom:16px">Billing rate minus salary cost per talent. Only outsourced talents with a matched client salary entry are shown.</p>
+    <div id="gross-margin-body"><div class="empty-state">No outsourced talent salary entries linked to clients yet</div></div>
   </div>
 </div>
 
