@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QATek Finance Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#1a1a18;--ink2:#5a5a56;--ink3:#9a9a94;
+  --paper:#fafaf8;--surface:#f2f2ee;--card:#ffffff;
+  --green:#2d6a4f;--green-l:#d8f3dc;--green-mid:#52b788;
+  --red:#9b2226;--red-l:#fde8e8;--red-mid:#e03131;
+  --gold:#b5830a;--gold-l:#fff3cd;
+  --blue:#1864ab;--blue-l:#dbe4ff;--blue-mid:#4c6ef5;
+  --teal:#0b7285;--teal-l:#e3fafc;
+  --border:rgba(0,0,0,0.08);
+  --radius:12px;
+  --shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.04);
+}
+
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  font-size:14px;
+  line-height:1.5;
+  min-height:100vh;
+}
+
+/* ── Top Nav ── */
+.topnav{
+  background:var(--ink);
+  display:flex;
+  align-items:center;
+  padding:0 0 0 24px;
+  height:54px;
+  position:sticky;
+  top:0;
+  z-index:200;
+  box-shadow:0 2px 12px rgba(0,0,0,0.2);
+}
+.brand{
+  font-family:'DM Serif Display',serif;
+  color:#fff;
+  font-size:19px;
+  margin-right:28px;
+  letter-spacing:-0.3px;
+  white-space:nowrap;
+}
+.brand span{color:#52b788}
+.navtab{
+  padding:0 18px;
+  height:54px;
+  display:flex;
+  align-items:center;
+  cursor:pointer;
+  color:rgba(255,255,255,0.5);
+  font-size:13px;
+  font-weight:500;
+  border-bottom:2px solid transparent;
+  transition:all .2s;
+  letter-spacing:0.2px;
+  white-space:nowrap;
+  user-select:none;
+}
+.navtab:hover{color:rgba(255,255,255,0.85)}
+.navtab.active{color:#fff;border-bottom-color:#52b788}
+
+/* ── Layout ── */
+.screen{display:none;padding:28px 32px;max-width:1280px;margin:0 auto}
+.screen.active{display:block}
+
+/* ── Month Nav ── */
+.month-nav{display:flex;align-items:center;gap:12px;margin-bottom:26px}
+.month-nav h2{
+  font-family:'DM Serif Display',serif;
+  font-size:28px;
+  letter-spacing:-0.5px;
+  flex:1;
+}
+.mth-btn{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:7px 16px;
+  cursor:pointer;
+  font-size:13px;
+  font-weight:500;
+  font-family:'DM Sans',sans-serif;
+  transition:all .2s;
+  color:var(--ink);
+}
+.mth-btn:hover{background:var(--surface);border-color:rgba(0,0,0,0.15)}
+.yr-badge{
+  background:var(--ink);
+  color:#fff;
+  border-radius:8px;
+  padding:5px 14px;
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:0.5px;
+}
+
+/* ── KPI Grid ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.kpi{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:20px 22px;
+  box-shadow:var(--shadow);
+}
+.kpi-label{
+  font-size:11px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.8px;
+  color:var(--ink3);
+  margin-bottom:8px;
+}
+.kpi-val{font-size:28px;font-weight:300;letter-spacing:-1px;line-height:1}
+.kpi-sub{font-size:11px;color:var(--ink3);margin-top:6px}
+.kpi.profit .kpi-val{color:var(--green)}
+.kpi.loss .kpi-val{color:var(--red)}
+
+/* ── Section Grid ── */
+.section-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px}
+
+/* ── Cards ── */
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:22px;
+  box-shadow:var(--shadow);
+}
+.card-title{
+  font-size:11px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.8px;
+  color:var(--ink3);
+  margin-bottom:14px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot-green{background:var(--green-mid)}
+.dot-blue{background:var(--blue-mid)}
+.dot-red{background:var(--red-mid)}
+.dot-gold{background:#f59f00}
+
+/* ── Mini Table ── */
+.mini-table{width:100%;border-collapse:collapse}
+.mini-table th{
+  font-size:10px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.6px;
+  color:var(--ink3);
+  padding:0 0 8px;
+  text-align:left;
+  border-bottom:1px solid var(--border);
+}
+.mini-table td{
+  padding:7px 0;
+  font-size:13px;
+  border-bottom:1px solid rgba(0,0,0,0.04);
+}
+.mini-table td:last-child{text-align:right;font-weight:500}
+.mini-table tr:last-child td{border-bottom:none}
+.total-row td{
+  font-weight:600;
+  color:var(--ink);
+  font-size:14px;
+  padding-top:10px;
+  border-top:1px solid var(--border);
+  border-bottom:none!important;
+}
+.pos{color:var(--green)}
+.neg{color:var(--red)}
+
+/* ── P&L Bar ── */
+.pl-bar{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:20px 22px;
+  margin-bottom:20px;
+  box-shadow:var(--shadow);
+}
+.pl-bar h3{
+  font-size:11px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.8px;
+  color:var(--ink3);
+  margin-bottom:14px;
+}
+.bar-track{
+  height:10px;
+  background:var(--surface);
+  border-radius:99px;
+  overflow:hidden;
+  margin-bottom:10px;
+  display:flex;
+}
+.bar-seg{
+  height:100%;
+  transition:width .6s cubic-bezier(.34,1.56,.64,1);
+}
+.bar-leg{display:flex;gap:20px;font-size:11px;color:var(--ink2);flex-wrap:wrap}
+.bar-leg span{display:flex;align-items:center;gap:5px}
+.bar-leg .sq{width:9px;height:9px;border-radius:2px;display:inline-block;flex-shrink:0}
+
+/* ── Net Line ── */
+.net-line{
+  margin-top:14px;
+  padding:10px 14px;
+  background:var(--surface);
+  border-radius:8px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.net-line-label{font-size:11px;font-weight:600;color:var(--ink3);letter-spacing:0.5px;text-transform:uppercase}
+.net-line-val{font-size:16px;font-weight:600}
+
+/* ── Entry ── */
+.entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.form-section{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:24px;
+  box-shadow:var(--shadow);
+}
+.form-section h3{
+  font-family:'DM Serif Display',serif;
+  font-size:20px;
+  letter-spacing:-0.3px;
+  margin-bottom:4px;
+}
+.form-section p{font-size:12px;color:var(--ink3);margin-bottom:18px;line-height:1.5}
+
+.field-row{display:flex;gap:10px;margin-bottom:10px;align-items:flex-end}
+.field{flex:1}
+.field label{
+  display:block;
+  font-size:11px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.6px;
+  color:var(--ink3);
+  margin-bottom:5px;
+}
+.field input,.field select{
+  width:100%;
+  padding:9px 12px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  font-family:'DM Sans',sans-serif;
+  font-size:13px;
+  background:var(--surface);
+  color:var(--ink);
+  outline:none;
+  transition:border-color .2s,background .2s;
+}
+.field input:focus,.field select:focus{border-color:#52b788;background:#fff}
+
+.input-wrap{position:relative}
+.input-wrap::before{
+  content:'₦';
+  position:absolute;
+  left:10px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:13px;
+  color:var(--ink3);
+  pointer-events:none;
+  z-index:1;
+}
+.input-wrap input{padding-left:22px}
+
+.btn-add{
+  padding:9px 18px;
+  background:var(--ink);
+  color:#fff;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:13px;
+  font-weight:500;
+  white-space:nowrap;
+  font-family:'DM Sans',sans-serif;
+  transition:all .2s;
+  flex-shrink:0;
+}
+.btn-add:hover{background:#2d2d2a}
+.btn-add.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--border)}
+.btn-add.ghost:hover{background:#e8e8e4}
+
+.btn-del{
+  padding:4px 10px;
+  background:var(--red-l);
+  color:var(--red);
+  border:1px solid rgba(155,34,38,0.15);
+  border-radius:6px;
+  cursor:pointer;
+  font-size:11px;
+  font-weight:600;
+  font-family:'DM Sans',sans-serif;
+  transition:all .2s;
+  flex-shrink:0;
+}
+.btn-del:hover{background:#fcc}
+
+.entry-list{margin-top:16px;max-height:240px;overflow-y:auto}
+.entry-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:9px 12px;
+  background:var(--surface);
+  border-radius:8px;
+  margin-bottom:6px;
+  font-size:12px;
+  gap:8px;
+}
+.entry-item .elab{flex:1;color:var(--ink2)}
+.entry-item .eamt{font-weight:600;color:var(--ink);white-space:nowrap}
+.empty-state{font-size:12px;color:var(--ink3);text-align:center;padding:20px 0;font-style:italic}
+
+/* ── Client Cards in Entry ── */
+.client-card{
+  background:var(--surface);
+  border-radius:10px;
+  padding:14px;
+  margin-bottom:12px;
+  border:1px solid var(--border);
+}
+.client-name-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+}
+.client-name-input{
+  font-weight:600;
+  font-size:14px;
+  border:none;
+  background:transparent;
+  color:var(--ink);
+  flex:1;
+  outline:none;
+  font-family:'DM Sans',sans-serif;
+  padding:0;
+}
+.talent-header{
+  display:grid;
+  grid-template-columns:1fr 100px 36px;
+  gap:8px;
+  padding:5px 8px;
+  background:rgba(0,0,0,0.04);
+  border-radius:6px;
+  font-size:10px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+  color:var(--ink3);
+  margin-bottom:6px;
+}
+.talent-row{
+  display:grid;
+  grid-template-columns:1fr 100px 36px;
+  gap:8px;
+  align-items:center;
+  padding:5px 0;
+  border-bottom:1px solid rgba(0,0,0,0.04);
+}
+.talent-row:last-of-type{border-bottom:none}
+.talent-input{
+  padding:5px 8px;
+  border:1px solid var(--border);
+  border-radius:6px;
+  font-size:12px;
+  font-family:'DM Sans',sans-serif;
+  background:#fff;
+  color:var(--ink);
+  width:100%;
+  outline:none;
+}
+.talent-input:focus{border-color:#52b788}
+.talent-input.rate{text-align:right}
+
+/* ── Subtabs ── */
+.subtabs{display:flex;gap:6px;margin-bottom:20px}
+.subtab{
+  padding:7px 16px;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:13px;
+  font-weight:500;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--ink2);
+  transition:all .2s;
+  font-family:'DM Sans',sans-serif;
+  user-select:none;
+}
+.subtab:hover{background:#e8e8e4;color:var(--ink)}
+.subtab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* ── Year Overview ── */
+.year-grid{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:10px;
+  margin-bottom:22px;
+}
+.month-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:14px 12px;
+  cursor:pointer;
+  transition:all .2s;
+  box-shadow:var(--shadow);
+}
+.month-card:hover{border-color:#52b788;transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,0,0,0.1)}
+.month-card.current-m{border-color:#52b788;background:linear-gradient(135deg,#f0faf5,#fff)}
+.month-card .mc-name{
+  font-size:10px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.8px;
+  color:var(--ink3);
+  margin-bottom:6px;
+}
+.month-card .mc-pl{font-size:15px;font-weight:400;letter-spacing:-0.5px}
+.month-card .mc-bar{height:3px;border-radius:99px;margin-top:8px;background:var(--surface)}
+.month-card .mc-fill{height:100%;border-radius:99px;transition:width .4s}
+
+/* ── Chart ── */
+.chart-wrap{position:relative;width:100%}
+
+/* ── Pill ── */
+.pill{
+  display:inline-flex;
+  align-items:center;
+  padding:3px 10px;
+  border-radius:99px;
+  font-size:11px;
+  font-weight:600;
+}
+.pill-green{background:var(--green-l);color:var(--green)}
+.pill-red{background:var(--red-l);color:var(--red)}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;
+  bottom:28px;
+  right:28px;
+  background:var(--ink);
+  color:#fff;
+  padding:10px 20px;
+  border-radius:10px;
+  font-size:13px;
+  font-weight:500;
+  z-index:9999;
+  opacity:0;
+  transform:translateY(10px);
+  transition:all .3s;
+  pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* ── Responsive ── */
+@media(max-width:1024px){
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .year-grid{grid-template-columns:repeat(4,1fr)}
+}
+@media(max-width:768px){
+  .screen{padding:16px}
+  .section-grid,.entry-grid{grid-template-columns:1fr}
+  .year-grid{grid-template-columns:repeat(3,1fr)}
+  .topnav{overflow-x:auto}
+}
+@media(max-width:480px){
+  .kpi-grid{grid-template-columns:1fr}
+  .year-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<div class="topnav">
+  <div class="brand">QA<span>Tek</span> Finance</div>
+  <div class="navtab active" onclick="showScreen('dashboard',this)">P&amp;L Dashboard</div>
+  <div class="navtab" onclick="showScreen('entry',this)">Data Entry</div>
+  <div class="navtab" onclick="showScreen('yearview',this)">Year Overview</div>
+  <div class="navtab" onclick="showScreen('exec',this)">Exec View</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════
+     SCREEN 1 — P&L DASHBOARD
+════════════════════════════════════════════════ -->
+<div class="screen active" id="screen-dashboard">
+  <div class="month-nav">
+    <button class="mth-btn" onclick="changeMonth(-1)">← Prev</button>
+    <h2 id="dash-month-title">—</h2>
+    <button class="mth-btn" onclick="changeMonth(1)">Next →</button>
+    <span class="yr-badge" id="dash-year-badge">—</span>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-val" id="kv-rev">₦0</div>
+      <div class="kpi-sub">Consulting + Learning</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Total Expenses</div>
+      <div class="kpi-val" id="kv-exp">₦0</div>
+      <div class="kpi-sub">All divisions</div>
+    </div>
+    <div class="kpi" id="kpi-pl">
+      <div class="kpi-label">Net Profit / Loss</div>
+      <div class="kpi-val" id="kv-pl">₦0</div>
+      <div class="kpi-sub" id="kv-pl-sub">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Profit Margin</div>
+      <div class="kpi-val" id="kv-margin">—</div>
+      <div class="kpi-sub">Net ÷ Revenue</div>
+    </div>
+  </div>
+
+  <!-- Revenue vs Expense Bar -->
+  <div class="pl-bar">
+    <h3>Revenue vs Expenses at a glance</h3>
+    <div class="bar-track">
+      <div class="bar-seg" id="bar-consult" style="background:#2d6a4f;width:0%"></div>
+      <div class="bar-seg" id="bar-learn"   style="background:#52b788;width:0%"></div>
+      <div class="bar-seg" id="bar-exp"     style="background:#e03131;width:0%;margin-left:auto"></div>
+    </div>
+    <div class="bar-leg">
+      <span><span class="sq" style="background:#2d6a4f"></span>Consulting Revenue</span>
+      <span><span class="sq" style="background:#52b788"></span>Learning Revenue</span>
+      <span><span class="sq" style="background:#e03131"></span>Total Expenses</span>
+    </div>
+  </div>
+
+  <!-- Division Detail -->
+  <div class="section-grid">
+
+    <!-- Consulting -->
+    <div class="card">
+      <div class="card-title"><span class="dot dot-green"></span>Consulting Division — Revenue</div>
+      <table class="mini-table">
+        <thead><tr><th>Client</th><th>Amount (₦)</th></tr></thead>
+        <tbody id="consult-rev-rows"></tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td>Total Revenue</td>
+            <td id="consult-rev-total" class="pos">₦0</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
+        <div class="card-title"><span class="dot dot-red"></span>Consulting Expenses</div>
+        <table class="mini-table">
+          <thead><tr><th>Category</th><th>Amount (₦)</th></tr></thead>
+          <tbody id="consult-exp-rows"></tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td>Total Expenses</td>
+              <td id="consult-exp-total" class="neg">₦0</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="net-line">
+        <span class="net-line-label">Consulting Net</span>
+        <span class="net-line-val" id="consult-net">₦0</span>
+      </div>
+    </div>
+
+    <!-- Learning -->
+    <div class="card">
+      <div class="card-title"><span class="dot dot-blue"></span>Learning Division — Revenue</div>
+      <table class="mini-table">
+        <thead><tr><th>Source / Cohort</th><th>Amount (₦)</th></tr></thead>
+        <tbody id="learn-rev-rows"></tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td>Total Revenue</td>
+            <td id="learn-rev-total" class="pos">₦0</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
+        <div class="card-title"><span class="dot dot-red"></span>Learning Expenses</div>
+        <table class="mini-table">
+          <thead><tr><th>Category</th><th>Amount (₦)</th></tr></thead>
+          <tbody id="learn-exp-rows"></tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td>Total Expenses</td>
+              <td id="learn-exp-total" class="neg">₦0</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="net-line">
+        <span class="net-line-label">Learning Net</span>
+        <span class="net-line-val" id="learn-net">₦0</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Salary Breakdown -->
+  <div class="card">
+    <div class="card-title"><span class="dot dot-gold"></span>Salary &amp; Staff Costs — Consulting Division</div>
+    <table class="mini-table">
+      <thead><tr><th>Name / Group</th><th>Type</th><th>Amount (₦)</th></tr></thead>
+      <tbody id="salary-rows"></tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="2">Total Salaries &amp; Bonuses</td>
+          <td id="salary-total" class="neg">₦0</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     SCREEN 2 — DATA ENTRY
+════════════════════════════════════════════════ -->
+<div class="screen" id="screen-entry">
+  <div class="month-nav">
+    <button class="mth-btn" onclick="changeMonth(-1)">← Prev</button>
+    <h2 id="entry-month-title">—</h2>
+    <button class="mth-btn" onclick="changeMonth(1)">Next →</button>
+    <span class="yr-badge" id="entry-year-badge">—</span>
+  </div>
+
+  <div class="subtabs">
+    <div class="subtab active" onclick="showEntryTab('consulting',this)">Consulting</div>
+    <div class="subtab" onclick="showEntryTab('learning',this)">Learning</div>
+    <div class="subtab" onclick="showEntryTab('salaries',this)">Salaries &amp; Staff</div>
+  </div>
+
+  <!-- Tab: Consulting -->
+  <div id="etab-consulting" class="entry-grid">
+    <div class="form-section">
+      <h3>Client Revenue</h3>
+      <p>Add each client, then add their outsourced talents and monthly rate. Each talent entry records who is billed to whom.</p>
+      <div id="clients-container"></div>
+      <button class="btn-add ghost" style="width:100%;margin-top:4px" onclick="addClient()">+ Add Client</button>
+    </div>
+    <div class="form-section">
+      <h3>Consulting Expenses</h3>
+      <p>Log tools, subscriptions, ads, and other costs specific to the consulting division.</p>
+      <div class="field-row">
+        <div class="field">
+          <label>Category</label>
+          <input type="text" id="cexp-cat" placeholder="e.g. AWS, Jira subscription">
+        </div>
+        <div class="field" style="max-width:150px">
+          <label>Amount (₦)</label>
+          <div class="input-wrap">
+            <input type="number" id="cexp-amt" placeholder="0" min="0">
+          </div>
+        </div>
+        <button class="btn-add" onclick="addConsultExp()">Add</button>
+      </div>
+      <div class="entry-list" id="cexp-list"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Learning -->
+  <div id="etab-learning" class="entry-grid" style="display:none">
+    <div class="form-section">
+      <h3>Training Revenue</h3>
+      <p>Record payments from talents who enrolled for training programmes.</p>
+      <div class="field-row">
+        <div class="field">
+          <label>Source / Cohort</label>
+          <input type="text" id="lrev-src" placeholder="e.g. Cohort 4 — April">
+        </div>
+        <div class="field" style="max-width:150px">
+          <label>Amount (₦)</label>
+          <div class="input-wrap">
+            <input type="number" id="lrev-amt" placeholder="0" min="0">
+          </div>
+        </div>
+        <button class="btn-add" onclick="addLearnRev()">Add</button>
+      </div>
+      <div class="entry-list" id="lrev-list"></div>
+    </div>
+    <div class="form-section">
+      <h3>Learning Expenses</h3>
+      <p>Meta Ads, trainer fees, platform tools, and any other learning division costs.</p>
+      <div class="field-row">
+        <div class="field">
+          <label>Category</label>
+          <input type="text" id="lexp-cat" placeholder="e.g. Meta Ads">
+        </div>
+        <div class="field" style="max-width:150px">
+          <label>Amount (₦)</label>
+          <div class="input-wrap">
+            <input type="number" id="lexp-amt" placeholder="0" min="0">
+          </div>
+        </div>
+        <button class="btn-add" onclick="addLearnExp()">Add</button>
+      </div>
+      <div class="entry-list" id="lexp-list"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Salaries -->
+  <div id="etab-salaries" class="entry-grid" style="display:none">
+    <div class="form-section">
+      <h3>Staff Salaries</h3>
+      <p>Log salaries for core staff (Finance, HR, Execs, BDM) and outsourced talents billed through consulting.</p>
+      <div class="field-row" style="flex-wrap:wrap;gap:8px">
+        <div class="field" style="min-width:140px">
+          <label>Name / Group</label>
+          <input type="text" id="sal-name" placeholder="e.g. Finance team">
+        </div>
+        <div class="field" style="max-width:140px">
+          <label>Type</label>
+          <select id="sal-type">
+            <option value="Core Staff">Core Staff</option>
+            <option value="Outsourced Talent">Outsourced Talent</option>
+          </select>
+        </div>
+        <div class="field" style="max-width:140px">
+          <label>Amount (₦)</label>
+          <div class="input-wrap">
+            <input type="number" id="sal-amt" placeholder="0" min="0">
+          </div>
+        </div>
+        <button class="btn-add" onclick="addSalary()">Add</button>
+      </div>
+      <div class="entry-list" id="sal-list"></div>
+    </div>
+    <div class="form-section">
+      <h3>Bonuses &amp; Extras</h3>
+      <p>Performance bonuses, one-off payments, reimbursements, or allowances.</p>
+      <div class="field-row">
+        <div class="field">
+          <label>Description</label>
+          <input type="text" id="bon-desc" placeholder="e.g. Q1 performance bonus">
+        </div>
+        <div class="field" style="max-width:150px">
+          <label>Amount (₦)</label>
+          <div class="input-wrap">
+            <input type="number" id="bon-amt" placeholder="0" min="0">
+          </div>
+        </div>
+        <button class="btn-add" onclick="addBonus()">Add</button>
+      </div>
+      <div class="entry-list" id="bon-list"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     SCREEN 3 — YEAR OVERVIEW
+════════════════════════════════════════════════ -->
+<div class="screen" id="screen-yearview">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:26px;flex-wrap:wrap">
+    <h2 style="font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-0.5px;flex:1">
+      Year Overview &nbsp;<span id="yr-label" style="color:var(--ink3)">2025</span>
+    </h2>
+    <button class="mth-btn" onclick="changeYear(-1)">← Previous Year</button>
+    <button class="mth-btn" onclick="changeYear(1)">Next Year →</button>
+  </div>
+
+  <div class="year-grid" id="year-month-grid"></div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Monthly Revenue, Expenses &amp; Net P&amp;L trend</div>
+    <div class="chart-wrap" style="height:260px"><canvas id="yearChart"></canvas></div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-label">YTD Revenue</div>
+      <div class="kpi-val" id="ytd-rev">₦0</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">YTD Expenses</div>
+      <div class="kpi-val" id="ytd-exp">₦0</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">YTD Net P&amp;L</div>
+      <div class="kpi-val" id="ytd-net">₦0</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Best Month</div>
+      <div class="kpi-val" id="ytd-best" style="font-size:22px">—</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     SCREEN 4 — EXEC VIEW
+════════════════════════════════════════════════ -->
+<div class="screen" id="screen-exec">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:26px;flex-wrap:wrap">
+    <h2 style="font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-0.5px;flex:1">Executive Summary</h2>
+    <select id="exec-year-sel" onchange="renderExec()" style="padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--card);color:var(--ink);outline:none">
+      <option>2024</option>
+      <option selected>2025</option>
+      <option>2026</option>
+      <option>2027</option>
+    </select>
+  </div>
+
+  <div class="kpi-grid" style="margin-bottom:22px">
+    <div class="kpi">
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-val" id="ex-rev">₦0</div>
+      <div class="kpi-sub">Full year</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Total Expenses</div>
+      <div class="kpi-val" id="ex-exp">₦0</div>
+      <div class="kpi-sub">Full year</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Net P&amp;L</div>
+      <div class="kpi-val" id="ex-pl">₦0</div>
+      <div class="kpi-sub" id="ex-pl-pill"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Avg Monthly Margin</div>
+      <div class="kpi-val" id="ex-margin">—</div>
+      <div class="kpi-sub">Months with data only</div>
+    </div>
+  </div>
+
+  <div class="section-grid" style="margin-bottom:22px">
+    <div class="card">
+      <div class="card-title">Revenue split by division</div>
+      <div class="chart-wrap" style="height:200px"><canvas id="execPieChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Monthly cashflow — net P&amp;L per month</div>
+      <div class="chart-wrap" style="height:200px"><canvas id="execWaterChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Month-by-month P&amp;L breakdown</div>
+    <div style="overflow-x:auto">
+      <table class="mini-table" style="margin-top:8px;min-width:700px">
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Consulting Rev</th>
+            <th>Learning Rev</th>
+            <th>Total Revenue</th>
+            <th>Total Expenses</th>
+            <th>Net P&amp;L</th>
+            <th>Margin</th>
+          </tr>
+        </thead>
+        <tbody id="exec-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════ -->
+<script>
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const SHORT_M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// State
+let currentYear  = new Date().getFullYear();
+let currentMonth = new Date().getMonth();
+let viewYear     = currentYear;
+let data         = {}; // data[year][month] = {clients, cexp, lrev, lexp, salaries, bonuses}
+
+// Chart instances
+let yearChartInst = null;
+let execPieInst   = null;
+let execWaterInst = null;
+
+/* ── Data helpers ─────────────────────────────── */
+function getM(y, m) {
+  if (!data[y])    data[y]    = {};
+  if (!data[y][m]) data[y][m] = { clients:[], cexp:[], lrev:[], lexp:[], salaries:[], bonuses:[] };
+  return data[y][m];
+}
+
+function calcMonth(y, m) {
+  const d = getM(y, m);
+  const consultRev = d.clients.reduce((s, c) => s + (c.talents||[]).reduce((ss, t) => ss + (parseFloat(t.rate)||0), 0), 0);
+  const learnRev   = d.lrev.reduce((s, e) => s + (parseFloat(e.amt)||0), 0);
+  const salTotal   = d.salaries.reduce((s, e) => s + (parseFloat(e.amt)||0), 0);
+  const bonTotal   = d.bonuses.reduce((s, e) => s + (parseFloat(e.amt)||0), 0);
+  const cexpTotal  = d.cexp.reduce((s, e) => s + (parseFloat(e.amt)||0), 0);
+  const lexpTotal  = d.lexp.reduce((s, e) => s + (parseFloat(e.amt)||0), 0);
+  const totalRev   = consultRev + learnRev;
+  const totalExp   = salTotal + bonTotal + cexpTotal + lexpTotal;
+  return { consultRev, learnRev, salTotal, bonTotal, cexpTotal, lexpTotal, totalRev, totalExp, net: totalRev - totalExp };
+}
+
+/* ── Formatting ───────────────────────────────── */
+function fmt(n) {
+  const abs = Math.abs(n);
+  let s;
+  if      (abs >= 1_000_000) s = '₦' + (abs / 1_000_000).toFixed(1) + 'M';
+  else if (abs >= 1_000)     s = '₦' + (abs / 1_000).toFixed(0) + 'K';
+  else                       s = '₦' + Math.round(abs).toLocaleString();
+  return n < 0 ? '-' + s : s;
+}
+function fmtFull(n) {
+  return (n < 0 ? '-' : '') + '₦' + Math.abs(Math.round(n)).toLocaleString();
+}
+
+/* ── Persistence (localStorage) ──────────────── */
+function saveData() {
+  try { localStorage.setItem('qatek-finance-v2', JSON.stringify(data)); } catch(e) {}
+}
+function loadData() {
+  try {
+    const raw = localStorage.getItem('qatek-finance-v2');
+    if (raw) data = JSON.parse(raw);
+  } catch(e) {}
+}
+
+/* ── Toast ────────────────────────────────────── */
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ── Navigation ───────────────────────────────── */
+function showScreen(id, el) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.navtab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'yearview')  renderYearView();
+  if (id === 'exec')      renderExec();
+  if (id === 'entry')     renderEntry();
+}
+
+function changeMonth(dir) {
+  currentMonth += dir;
+  if (currentMonth < 0)  { currentMonth = 11; currentYear--; }
+  if (currentMonth > 11) { currentMonth = 0;  currentYear++; }
+  renderDashboard();
+  renderEntry();
+}
+
+function changeYear(dir) {
+  viewYear += dir;
+  document.getElementById('yr-label').textContent = viewYear;
+  renderYearView();
+}
+
+function showEntryTab(tab, el) {
+  ['consulting','learning','salaries'].forEach(t => {
+    document.getElementById('etab-' + t).style.display = 'none';
+  });
+  document.querySelectorAll('.subtab').forEach(t => t.classList.remove('active'));
+  document.getElementById('etab-' + tab).style.display = 'grid';
+  if (el) el.classList.add('active');
+}
+
+/* ── DASHBOARD RENDER ─────────────────────────── */
+function renderDashboard() {
+  const y = currentYear, m = currentMonth;
+  const label = MONTHS[m] + ' ' + y;
+  document.getElementById('dash-month-title').textContent  = label;
+  document.getElementById('dash-year-badge').textContent   = y;
+  document.getElementById('entry-month-title').textContent = label;
+  document.getElementById('entry-year-badge').textContent  = y;
+
+  const c = calcMonth(y, m);
+  const d = getM(y, m);
+
+  // KPIs
+  document.getElementById('kv-rev').textContent    = fmtFull(c.totalRev);
+  document.getElementById('kv-exp').textContent    = fmtFull(c.totalExp);
+  const plEl  = document.getElementById('kpi-pl');
+  const plVal = document.getElementById('kv-pl');
+  plVal.textContent = fmtFull(c.net);
+  plEl.className    = 'kpi ' + (c.net >= 0 ? 'profit' : 'loss');
+  plVal.style.color = c.net >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('kv-pl-sub').textContent = c.net >= 0 ? '↑ In profit this month' : '↓ In loss this month';
+  document.getElementById('kv-margin').textContent = c.totalRev > 0 ? Math.round(c.net / c.totalRev * 100) + '%' : '—';
+  document.getElementById('kv-margin').style.color = c.net >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // Bar
+  const maxVal = Math.max(c.totalRev, c.totalExp, 1);
+  document.getElementById('bar-consult').style.width = (c.consultRev / maxVal * 100) + '%';
+  document.getElementById('bar-learn').style.width   = (c.learnRev   / maxVal * 100) + '%';
+  document.getElementById('bar-exp').style.width     = (c.totalExp   / maxVal * 100) + '%';
+
+  // Consulting revenue rows
+  let cRevRows = '';
+  d.clients.forEach(cl => {
+    const ct = (cl.talents||[]).reduce((s, t) => s + (parseFloat(t.rate)||0), 0);
+    if (ct > 0 || cl.talents.length > 0)
+      cRevRows += `<tr><td>${cl.name} <span style="color:var(--ink3);font-size:11px">(${cl.talents.length} talent${cl.talents.length!==1?'s':''})</span></td><td class="pos">${fmtFull(ct)}</td></tr>`;
+  });
+  document.getElementById('consult-rev-rows').innerHTML  = cRevRows || '<tr><td colspan="2" class="empty-state">No client entries yet</td></tr>';
+  document.getElementById('consult-rev-total').textContent = fmtFull(c.consultRev);
+
+  let cExpRows = '';
+  d.cexp.forEach(e => cExpRows += `<tr><td>${e.cat}</td><td class="neg">${fmtFull(e.amt)}</td></tr>`);
+  document.getElementById('consult-exp-rows').innerHTML    = cExpRows || '<tr><td colspan="2" class="empty-state">No entries</td></tr>';
+  document.getElementById('consult-exp-total').textContent = fmtFull(c.cexpTotal);
+
+  const cNet = c.consultRev - c.cexpTotal - c.salTotal - c.bonTotal;
+  const cNetEl = document.getElementById('consult-net');
+  cNetEl.textContent  = fmtFull(cNet);
+  cNetEl.style.color  = cNet >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // Learning revenue rows
+  let lRevRows = '';
+  d.lrev.forEach(e => lRevRows += `<tr><td>${e.src}</td><td class="pos">${fmtFull(e.amt)}</td></tr>`);
+  document.getElementById('learn-rev-rows').innerHTML    = lRevRows || '<tr><td colspan="2" class="empty-state">No entries</td></tr>';
+  document.getElementById('learn-rev-total').textContent = fmtFull(c.learnRev);
+
+  let lExpRows = '';
+  d.lexp.forEach(e => lExpRows += `<tr><td>${e.cat}</td><td class="neg">${fmtFull(e.amt)}</td></tr>`);
+  document.getElementById('learn-exp-rows').innerHTML    = lExpRows || '<tr><td colspan="2" class="empty-state">No entries</td></tr>';
+  document.getElementById('learn-exp-total').textContent = fmtFull(c.lexpTotal);
+
+  const lNet = c.learnRev - c.lexpTotal;
+  const lNetEl = document.getElementById('learn-net');
+  lNetEl.textContent = fmtFull(lNet);
+  lNetEl.style.color = lNet >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // Salaries
+  let salRows = '';
+  d.salaries.forEach(e => salRows += `<tr><td>${e.name}</td><td style="color:var(--ink3);font-size:12px">${e.type}</td><td class="neg">${fmtFull(e.amt)}</td></tr>`);
+  d.bonuses.forEach(e  => salRows += `<tr><td>${e.desc}</td><td style="color:var(--ink3);font-size:12px">Bonus</td><td class="neg">${fmtFull(e.amt)}</td></tr>`);
+  document.getElementById('salary-rows').innerHTML     = salRows || '<tr><td colspan="3" class="empty-state">No salary entries yet</td></tr>';
+  document.getElementById('salary-total').textContent  = fmtFull(c.salTotal + c.bonTotal);
+}
+
+/* ── ENTRY RENDER ─────────────────────────────── */
+function renderEntry() {
+  const d = getM(currentYear, currentMonth);
+  renderClients(d);
+  renderList('cexp-list', d.cexp,     e => `<span class="elab">${e.cat}</span><span class="eamt neg">${fmtFull(e.amt)}</span>`, 'cexp');
+  renderList('lrev-list', d.lrev,     e => `<span class="elab">${e.src}</span><span class="eamt pos">${fmtFull(e.amt)}</span>`, 'lrev');
+  renderList('lexp-list', d.lexp,     e => `<span class="elab">${e.cat}</span><span class="eamt neg">${fmtFull(e.amt)}</span>`, 'lexp');
+  renderList('sal-list',  d.salaries, e => `<span class="elab">${e.name} <span style="color:var(--ink3);font-size:11px">${e.type}</span></span><span class="eamt neg">${fmtFull(e.amt)}</span>`, 'salaries');
+  renderList('bon-list',  d.bonuses,  e => `<span class="elab">${e.desc}</span><span class="eamt neg">${fmtFull(e.amt)}</span>`, 'bonuses');
+}
+
+function renderList(id, arr, renderFn, key) {
+  const el = document.getElementById(id);
+  if (!arr || !arr.length) { el.innerHTML = '<div class="empty-state">No entries yet</div>'; return; }
+  el.innerHTML = arr.map((e, i) =>
+    `<div class="entry-item">${renderFn(e)}<button class="btn-del" onclick="delEntry('${key}',${i})">✕</button></div>`
+  ).join('');
+}
+
+function renderClients(d) {
+  const cont = document.getElementById('clients-container');
+  if (!d.clients.length) {
+    cont.innerHTML = '<div class="empty-state" style="margin-bottom:12px">No clients yet — click Add Client below</div>';
+    return;
+  }
+  cont.innerHTML = d.clients.map((cl, ci) => `
+    <div class="client-card">
+      <div class="client-name-row">
+        <input class="client-name-input" value="${cl.name}" onchange="updateClientName(${ci},this.value)" placeholder="Client name">
+        <button class="btn-del" onclick="delClient(${ci})">Remove</button>
+      </div>
+      <div class="talent-header"><span>Talent Name</span><span style="text-align:right">Rate (₦/mo)</span><span></span></div>
+      ${(cl.talents||[]).map((t, ti) => `
+        <div class="talent-row">
+          <input class="talent-input" value="${t.name}" onchange="updateTalent(${ci},${ti},'name',this.value)" placeholder="Talent name">
+          <input class="talent-input rate" type="number" value="${t.rate||''}" onchange="updateTalent(${ci},${ti},'rate',this.value)" placeholder="0" min="0">
+          <button class="btn-del" style="padding:3px 7px" onclick="delTalent(${ci},${ti})">✕</button>
+        </div>`).join('')}
+      <button class="btn-add ghost" style="width:100%;margin-top:8px;font-size:12px;padding:6px" onclick="addTalent(${ci})">+ Add Talent</button>
+    </div>`).join('');
+}
+
+/* ── Entry mutations ──────────────────────────── */
+function addClient() {
+  const d = getM(currentYear, currentMonth);
+  d.clients.push({ name: 'Client ' + (d.clients.length + 1), talents: [] });
+  saveData(); renderEntry();
+}
+function delClient(i) {
+  getM(currentYear, currentMonth).clients.splice(i, 1);
+  saveData(); renderEntry(); renderDashboard(); toast('Client removed');
+}
+function updateClientName(ci, v) {
+  getM(currentYear, currentMonth).clients[ci].name = v;
+  saveData();
+}
+function addTalent(ci) {
+  getM(currentYear, currentMonth).clients[ci].talents.push({ name: '', rate: 0 });
+  saveData(); renderEntry();
+}
+function delTalent(ci, ti) {
+  getM(currentYear, currentMonth).clients[ci].talents.splice(ti, 1);
+  saveData(); renderEntry(); renderDashboard();
+}
+function updateTalent(ci, ti, field, val) {
+  const t = getM(currentYear, currentMonth).clients[ci].talents[ti];
+  t[field] = field === 'rate' ? parseFloat(val)||0 : val;
+  saveData(); renderDashboard();
+}
+
+function addConsultExp() {
+  const cat = document.getElementById('cexp-cat').value.trim();
+  const amt = parseFloat(document.getElementById('cexp-amt').value)||0;
+  if (!cat || !amt) return toast('Please fill in category and amount');
+  getM(currentYear, currentMonth).cexp.push({ cat, amt });
+  document.getElementById('cexp-cat').value = '';
+  document.getElementById('cexp-amt').value = '';
+  saveData(); renderEntry(); renderDashboard(); toast('Expense added');
+}
+function addLearnRev() {
+  const src = document.getElementById('lrev-src').value.trim();
+  const amt = parseFloat(document.getElementById('lrev-amt').value)||0;
+  if (!src || !amt) return toast('Please fill in source and amount');
+  getM(currentYear, currentMonth).lrev.push({ src, amt });
+  document.getElementById('lrev-src').value = '';
+  document.getElementById('lrev-amt').value = '';
+  saveData(); renderEntry(); renderDashboard(); toast('Revenue added');
+}
+function addLearnExp() {
+  const cat = document.getElementById('lexp-cat').value.trim();
+  const amt = parseFloat(document.getElementById('lexp-amt').value)||0;
+  if (!cat || !amt) return toast('Please fill in category and amount');
+  getM(currentYear, currentMonth).lexp.push({ cat, amt });
+  document.getElementById('lexp-cat').value = '';
+  document.getElementById('lexp-amt').value = '';
+  saveData(); renderEntry(); renderDashboard(); toast('Expense added');
+}
+function addSalary() {
+  const name = document.getElementById('sal-name').value.trim();
+  const type = document.getElementById('sal-type').value;
+  const amt  = parseFloat(document.getElementById('sal-amt').value)||0;
+  if (!name || !amt) return toast('Please fill in name and amount');
+  getM(currentYear, currentMonth).salaries.push({ name, type, amt });
+  document.getElementById('sal-name').value = '';
+  document.getElementById('sal-amt').value  = '';
+  saveData(); renderEntry(); renderDashboard(); toast('Salary entry added');
+}
+function addBonus() {
+  const desc = document.getElementById('bon-desc').value.trim();
+  const amt  = parseFloat(document.getElementById('bon-amt').value)||0;
+  if (!desc || !amt) return toast('Please fill in description and amount');
+  getM(currentYear, currentMonth).bonuses.push({ desc, amt });
+  document.getElementById('bon-desc').value = '';
+  document.getElementById('bon-amt').value  = '';
+  saveData(); renderEntry(); renderDashboard(); toast('Bonus entry added');
+}
+function delEntry(key, i) {
+  getM(currentYear, currentMonth)[key].splice(i, 1);
+  saveData(); renderEntry(); renderDashboard(); toast('Entry deleted');
+}
+
+/* ── YEAR VIEW RENDER ─────────────────────────── */
+function renderYearView() {
+  document.getElementById('yr-label').textContent = viewYear;
+  const grid = document.getElementById('year-month-grid');
+  let html = '';
+  let ytdR = 0, ytdE = 0, bestNet = -Infinity, bestMon = '—';
+  const labels = [], revData = [], expData = [], netData = [];
+  const today = new Date();
+
+  for (let m = 0; m < 12; m++) {
+    const c = calcMonth(viewYear, m);
+    const isCurrent = (viewYear === today.getFullYear() && m === today.getMonth());
+    const hasData   = c.totalRev > 0 || c.totalExp > 0;
+    ytdR += c.totalRev; ytdE += c.totalExp;
+    if (hasData && c.net > bestNet) { bestNet = c.net; bestMon = SHORT_M[m]; }
+    labels.push(SHORT_M[m]);
+    revData.push(Math.round(c.totalRev));
+    expData.push(Math.round(c.totalExp));
+    netData.push(Math.round(c.net));
+    const barPct = hasData ? Math.min(Math.abs(c.net) / Math.max(c.totalRev, c.totalExp, 1) * 100, 100) : 0;
+    html += `<div class="month-card ${isCurrent?'current-m':''}" onclick="goToMonth(${m})">
+      <div class="mc-name">${SHORT_M[m]}</div>
+      <div class="mc-pl" style="color:${!hasData?'var(--ink3)':c.net>=0?'var(--green)':'var(--red)'}">${hasData ? fmt(c.net) : '—'}</div>
+      <div class="mc-bar"><div class="mc-fill" style="width:${barPct}%;background:${c.net>=0?'var(--green-mid)':'var(--red-mid)'}"></div></div>
+    </div>`;
+  }
+  grid.innerHTML = html;
+
+  document.getElementById('ytd-rev').textContent = fmtFull(ytdR);
+  document.getElementById('ytd-exp').textContent = fmtFull(ytdE);
+  const ytdNet = ytdR - ytdE;
+  const ytdEl  = document.getElementById('ytd-net');
+  ytdEl.textContent = fmtFull(ytdNet);
+  ytdEl.style.color = ytdNet >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('ytd-best').textContent = bestMon;
+
+  if (yearChartInst) yearChartInst.destroy();
+  yearChartInst = new Chart(document.getElementById('yearChart'), {
+    data: {
+      labels,
+      datasets: [
+        { type:'bar',  label:'Revenue',  data:revData, backgroundColor:'rgba(82,183,136,0.45)', borderColor:'#2d6a4f', borderWidth:1, borderRadius:4 },
+        { type:'bar',  label:'Expenses', data:expData, backgroundColor:'rgba(224,49,49,0.3)',   borderColor:'#9b2226', borderWidth:1, borderRadius:4 },
+        { type:'line', label:'Net P&L',  data:netData, borderColor:'#1864ab', backgroundColor:'transparent', pointBackgroundColor:'#1864ab', pointRadius:4, tension:0.35, borderWidth:2 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ grid:{ display:false }, ticks:{ font:{ size:11, family:"'DM Sans', sans-serif" } } },
+        y:{ grid:{ color:'rgba(0,0,0,0.05)' }, ticks:{ callback: v => v>=1000 ? '₦'+(v/1000).toFixed(0)+'K' : '₦'+v, font:{ size:11, family:"'DM Sans', sans-serif" } } }
+      }
+    }
+  });
+}
+
+function goToMonth(m) {
+  currentMonth = m; currentYear = viewYear;
+  showScreen('dashboard', document.querySelectorAll('.navtab')[0]);
+}
+
+/* ── EXEC VIEW RENDER ─────────────────────────── */
+function renderExec() {
+  const y = parseInt(document.getElementById('exec-year-sel').value) || currentYear;
+  let totR=0, totE=0, totCR=0, totLR=0, margins=[], waterData=[], wLabels=[];
+
+  for (let m = 0; m < 12; m++) {
+    const c = calcMonth(y, m);
+    totR  += c.totalRev;
+    totE  += c.totalExp;
+    totCR += c.consultRev;
+    totLR += c.learnRev;
+    if (c.totalRev > 0 || c.totalExp > 0) margins.push(c.totalRev > 0 ? c.net / c.totalRev * 100 : 0);
+    wLabels.push(SHORT_M[m]);
+    waterData.push(Math.round(c.net));
+  }
+
+  const totNet = totR - totE;
+  document.getElementById('ex-rev').textContent = fmtFull(totR);
+  document.getElementById('ex-exp').textContent = fmtFull(totE);
+  const exPlEl = document.getElementById('ex-pl');
+  exPlEl.textContent  = fmtFull(totNet);
+  exPlEl.style.color  = totNet >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('ex-pl-pill').innerHTML = `<span class="pill ${totNet>=0?'pill-green':'pill-red'}">${totNet>=0?'Profitable':'Loss-making'}</span>`;
+  const avgM = margins.length ? margins.reduce((a,b)=>a+b,0)/margins.length : null;
+  const exMEl = document.getElementById('ex-margin');
+  exMEl.textContent = avgM !== null ? Math.round(avgM) + '%' : '—';
+  exMEl.style.color = avgM >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // Pie chart
+  if (execPieInst) execPieInst.destroy();
+  execPieInst = new Chart(document.getElementById('execPieChart'), {
+    type:'doughnut',
+    data:{
+      labels:['Consulting','Learning'],
+      datasets:[{ data:[Math.round(totCR), Math.round(totLR)], backgroundColor:['#2d6a4f','#4c6ef5'], borderWidth:0, hoverOffset:4 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{ legend:{ position:'bottom', labels:{ font:{ size:11, family:"'DM Sans', sans-serif" }, usePointStyle:true, pointStyleWidth:10, padding:16 } } }
+    }
+  });
+
+  // Waterfall / cashflow
+  if (execWaterInst) execWaterInst.destroy();
+  execWaterInst = new Chart(document.getElementById('execWaterChart'), {
+    type:'bar',
+    data:{
+      labels:wLabels,
+      datasets:[{
+        label:'Net P&L',
+        data:waterData,
+        backgroundColor: waterData.map(v => v>=0 ? 'rgba(82,183,136,0.6)' : 'rgba(224,49,49,0.5)'),
+        borderColor:     waterData.map(v => v>=0 ? '#2d6a4f' : '#9b2226'),
+        borderWidth:1, borderRadius:3
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ grid:{ display:false }, ticks:{ font:{ size:10, family:"'DM Sans', sans-serif" }, maxRotation:0 } },
+        y:{ grid:{ color:'rgba(0,0,0,0.05)' }, ticks:{ callback: v => { const a=Math.abs(v); return (v<0?'-':'')+'₦'+(a>=1000?(a/1000).toFixed(0)+'K':a); }, font:{ size:10, family:"'DM Sans', sans-serif" } } }
+      }
+    }
+  });
+
+  // Summary table
+  let rows = '';
+  for (let m = 0; m < 12; m++) {
+    const c = calcMonth(y, m);
+    const hasData = c.totalRev > 0 || c.totalExp > 0;
+    const mg = c.totalRev > 0 ? Math.round(c.net / c.totalRev * 100) + '%' : '—';
+    rows += `<tr style="opacity:${hasData?1:0.38}">
+      <td style="font-weight:${hasData?500:400}">${MONTHS[m]}</td>
+      <td class="pos">${hasData?fmtFull(c.consultRev):'—'}</td>
+      <td class="pos">${hasData?fmtFull(c.learnRev):'—'}</td>
+      <td style="font-weight:500">${hasData?fmtFull(c.totalRev):'—'}</td>
+      <td class="neg">${hasData?fmtFull(c.totalExp):'—'}</td>
+      <td style="font-weight:600;color:${c.net>=0?'var(--green)':'var(--red)'}">${hasData?fmtFull(c.net):'—'}</td>
+      <td style="color:${c.net>=0?'var(--green)':'var(--red)'}">${hasData?mg:'—'}</td>
+    </tr>`;
+  }
+  document.getElementById('exec-table-body').innerHTML = rows;
+}
+
+/* ── Keyboard shortcuts ───────────────────────── */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'ArrowLeft')  changeMonth(-1);
+  if (e.key === 'ArrowRight') changeMonth(1);
+});
+
+/* ── Boot ─────────────────────────────────────── */
+loadData();
+renderDashboard();
+renderEntry();
+</script>
+</body>
+</html>
