@@ -751,20 +751,24 @@ body{
   <div id="etab-salaries" class="entry-grid" style="display:none">
     <div class="form-section">
       <h3>Staff Salaries</h3>
-      <p>Log salaries for core staff (Finance, HR, Execs, BDM) and outsourced talents billed through consulting.</p>
+      <p>Log salaries for core staff and outsourced talents. For outsourced talents, select their client — this powers the gross margin view on the dashboard.</p>
       <div class="field-row" style="flex-wrap:wrap;gap:8px">
-        <div class="field" style="min-width:140px">
-          <label>Name / Group</label>
-          <input type="text" id="sal-name" placeholder="e.g. Finance team">
+        <div class="field" style="min-width:120px">
+          <label>Name</label>
+          <input type="text" id="sal-name" placeholder="e.g. John Doe">
         </div>
-        <div class="field" style="max-width:140px">
+        <div class="field" style="max-width:130px">
           <label>Type</label>
-          <select id="sal-type">
+          <select id="sal-type" onchange="toggleSalClientField(this.value)">
             <option value="Core Staff">Core Staff</option>
             <option value="Outsourced Talent">Outsourced Talent</option>
           </select>
         </div>
-        <div class="field" style="max-width:140px">
+        <div class="field" id="sal-client-field" style="max-width:140px;display:none">
+          <label>Client</label>
+          <select id="sal-client"><option value="">— select —</option></select>
+        </div>
+        <div class="field" style="max-width:120px">
           <label>Amount (₦)</label>
           <div class="input-wrap">
             <input type="number" id="sal-amt" placeholder="0" min="0">
@@ -1009,6 +1013,7 @@ function showEntryTab(tab, el) {
   document.querySelectorAll('.subtab').forEach(t => t.classList.remove('active'));
   document.getElementById('etab-' + tab).style.display = 'grid';
   if (el) el.classList.add('active');
+  if (tab === 'salaries') populateSalClientDropdown();
 }
 
 /* ── DASHBOARD RENDER ─────────────────────────── */
@@ -1079,10 +1084,79 @@ function renderDashboard() {
 
   // Salaries
   let salRows = '';
-  d.salaries.forEach(e => salRows += `<tr><td>${e.name}</td><td style="color:var(--ink3);font-size:12px">${e.type}</td><td class="neg">${fmtFull(e.amt)}</td></tr>`);
-  d.bonuses.forEach(e  => salRows += `<tr><td>${e.desc}</td><td style="color:var(--ink3);font-size:12px">Bonus</td><td class="neg">${fmtFull(e.amt)}</td></tr>`);
-  document.getElementById('salary-rows').innerHTML     = salRows || '<tr><td colspan="3" class="empty-state">No salary entries yet</td></tr>';
+  d.salaries.forEach(e => salRows += `<tr><td>${e.name}</td><td style="color:var(--ink3);font-size:12px">${e.type}</td><td style="color:var(--ink3);font-size:12px">${e.client||'N/A'}</td><td class="neg">${fmtFull(e.amt)}</td></tr>`);
+  d.bonuses.forEach(e  => salRows += `<tr><td>${e.desc}</td><td style="color:var(--ink3);font-size:12px">Bonus</td><td style="color:var(--ink3);font-size:12px">—</td><td class="neg">${fmtFull(e.amt)}</td></tr>`);
+  document.getElementById('salary-rows').innerHTML     = salRows || '<tr><td colspan="4" class="empty-state">No salary entries yet</td></tr>';
   document.getElementById('salary-total').textContent  = fmtFull(c.salTotal + c.bonTotal);
+
+  // Gross margin per talent
+  renderGrossMargin(d);
+}
+
+function renderGrossMargin(d) {
+  const el = document.getElementById('gross-margin-body');
+  // Build a map: clientName -> list of {talentName, rate}
+  const clientRateMap = {};
+  d.clients.forEach(cl => {
+    clientRateMap[cl.name] = cl.talents || [];
+  });
+  // Build salary map: clientName -> list of {name, amt}
+  const salaryMap = {};
+  d.salaries.filter(s => s.type === 'Outsourced Talent' && s.client && s.client !== 'N/A').forEach(s => {
+    if (!salaryMap[s.client]) salaryMap[s.client] = [];
+    salaryMap[s.client].push(s);
+  });
+
+  const clientNames = Object.keys(salaryMap);
+  if (!clientNames.length) {
+    el.innerHTML = '<div class="empty-state">No outsourced talent salary entries linked to clients yet</div>';
+    return;
+  }
+
+  let html = '';
+  clientNames.forEach(clientName => {
+    const salEntries = salaryMap[clientName];
+    const talents    = clientRateMap[clientName] || [];
+    html += `<div style="margin-bottom:18px">
+      <div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:8px;padding:6px 10px;background:var(--surface);border-radius:8px">${clientName}</div>
+      <table class="mini-table">
+        <thead><tr><th>Talent</th><th>Billing Rate</th><th>Salary Cost</th><th>Gross Margin</th><th>Margin %</th></tr></thead>
+        <tbody>`;
+
+    salEntries.forEach(sal => {
+      // Try to match talent by name (case-insensitive)
+      const matched = talents.find(t => t.name.trim().toLowerCase() === sal.name.trim().toLowerCase());
+      const rate    = matched ? (parseFloat(matched.rate)||0) : 0;
+      const margin  = rate - sal.amt;
+      const pct     = rate > 0 ? Math.round(margin / rate * 100) : null;
+      const noRate  = !matched || rate === 0;
+      html += `<tr>
+        <td>${sal.name}</td>
+        <td class="pos">${noRate ? '<span style="color:var(--ink3);font-size:11px">not matched</span>' : fmtFull(rate)}</td>
+        <td class="neg">${fmtFull(sal.amt)}</td>
+        <td style="font-weight:600;color:${margin>=0?'var(--green)':'var(--red)'}">${noRate ? '—' : fmtFull(margin)}</td>
+        <td style="color:${margin>=0?'var(--green)':'var(--red)'}">${pct !== null && !noRate ? pct+'%' : '—'}</td>
+      </tr>`;
+    });
+
+    // Row totals for this client
+    const totalRate   = salEntries.reduce((s, sal) => {
+      const matched = talents.find(t => t.name.trim().toLowerCase() === sal.name.trim().toLowerCase());
+      return s + (matched ? parseFloat(matched.rate)||0 : 0);
+    }, 0);
+    const totalSal    = salEntries.reduce((s, e) => s + (parseFloat(e.amt)||0), 0);
+    const totalMargin = totalRate - totalSal;
+    const totalPct    = totalRate > 0 ? Math.round(totalMargin / totalRate * 100) : null;
+    html += `</tbody><tfoot><tr class="total-row">
+      <td>Total</td>
+      <td class="pos">${fmtFull(totalRate)}</td>
+      <td class="neg">${fmtFull(totalSal)}</td>
+      <td style="font-weight:700;color:${totalMargin>=0?'var(--green)':'var(--red)'}">${fmtFull(totalMargin)}</td>
+      <td style="font-weight:600;color:${totalMargin>=0?'var(--green)':'var(--red)'}">${totalPct !== null ? totalPct+'%' : '—'}</td>
+    </tr></tfoot></table></div>`;
+  });
+
+  el.innerHTML = html;
 }
 
 /* ── ENTRY RENDER ─────────────────────────────── */
@@ -1101,11 +1175,7 @@ function renderEntry() {
     { field:'cat', label:'Category',    type:'text',   flex:1 },
     { field:'amt', label:'Amount (₦)',  type:'number', width:'110px', prefix:'₦' }
   ]);
-  renderEditableList('sal-list',  d.salaries, 'salaries', [
-    { field:'name', label:'Name',       type:'text',   flex:1 },
-    { field:'type', label:'Type',       type:'select', width:'130px', options:['Core Staff','Outsourced Talent'] },
-    { field:'amt',  label:'Amount (₦)', type:'number', width:'110px', prefix:'₦' }
-  ]);
+  renderSalaryList('sal-list', d.salaries, d.clients);
   renderEditableList('bon-list',  d.bonuses,  'bonuses',  [
     { field:'desc', label:'Description', type:'text',  flex:1 },
     { field:'amt',  label:'Amount (₦)', type:'number', width:'110px', prefix:'₦' }
@@ -1130,6 +1200,44 @@ function renderEditableList(id, arr, key, cols) {
     }).join('');
     return `<div class="talent-row" style="display:flex;gap:8px;align-items:center;padding:6px 4px;border-bottom:1px solid rgba(0,0,0,0.05)">${cells}<button class="btn-del" style="padding:3px 7px;flex-shrink:0" onclick="delEntry('${key}',${i})">✕</button></div>`;
   }).join('');
+}
+
+function renderSalaryList(id, arr, clients) {
+  const el = document.getElementById(id);
+  if (!arr || !arr.length) { el.innerHTML = '<div class="empty-state">No entries yet</div>'; return; }
+  const clientOpts = '<option value="N/A">N/A (Core Staff)</option>' +
+    clients.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  el.innerHTML = arr.map((e, i) => {
+    const typeOpts = ['Core Staff','Outsourced Talent'].map(o => `<option${o===e.type?' selected':''}>${o}</option>`).join('');
+    const cVal = e.client || 'N/A';
+    const cOpts = clientOpts.replace(`value="${cVal}"`, `value="${cVal}" selected`);
+    return `<div class="talent-row" style="display:flex;gap:8px;align-items:center;padding:6px 4px;border-bottom:1px solid rgba(0,0,0,0.05)">
+      <div style="flex:1;position:relative">
+        <input class="talent-input" type="text" value="${e.name}" placeholder="Name" onchange="updateEntry('salaries',${i},'name',this.value)">
+      </div>
+      <div style="width:130px;flex-shrink:0">
+        <select class="talent-input" onchange="updateEntry('salaries',${i},'type',this.value);updateSalClientVis(this,${i})" style="width:100%;font-size:12px">${typeOpts}</select>
+      </div>
+      <div style="width:120px;flex-shrink:0" id="sal-client-inline-${i}">
+        <select class="talent-input" onchange="updateEntry('salaries',${i},'client',this.value)" style="width:100%;font-size:12px;${e.type==='Core Staff'?'opacity:0.4;pointer-events:none':''}">${cOpts}</select>
+      </div>
+      <div style="width:110px;flex-shrink:0;position:relative">
+        <span style="position:absolute;left:7px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--ink3);pointer-events:none">₦</span>
+        <input class="talent-input rate" type="number" value="${e.amt}" placeholder="0" min="0" style="padding-left:18px" onchange="updateEntry('salaries',${i},'amt',this.value)">
+      </div>
+      <button class="btn-del" style="padding:3px 7px;flex-shrink:0" onclick="delEntry('salaries',${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+function updateSalClientVis(sel, i) {
+  const inlineClient = document.getElementById('sal-client-inline-' + i);
+  if (!inlineClient) return;
+  const s = inlineClient.querySelector('select');
+  if (sel.value === 'Core Staff') {
+    s.style.opacity = '0.4'; s.style.pointerEvents = 'none';
+  } else {
+    s.style.opacity = '1'; s.style.pointerEvents = 'auto';
+  }
 }
 
 function updateEntry(key, i, field, val) {
@@ -1216,12 +1324,30 @@ function addLearnExp() {
   document.getElementById('lexp-amt').value = '';
   saveData(); renderEntry(); renderDashboard(); toast('Expense added');
 }
+function toggleSalClientField(type) {
+  const field = document.getElementById('sal-client-field');
+  field.style.display = type === 'Outsourced Talent' ? 'block' : 'none';
+  populateSalClientDropdown();
+}
+function populateSalClientDropdown() {
+  const sel = document.getElementById('sal-client');
+  if (!sel) return;
+  const clients = getM(currentYear, currentMonth).clients;
+  sel.innerHTML = '<option value="">— select client —</option>' +
+    clients.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  // Also refresh any inline salary list since clients may have changed
+  const d = getM(currentYear, currentMonth);
+  const salEl = document.getElementById('sal-list');
+  if (salEl && d.salaries.length) renderSalaryList('sal-list', d.salaries, d.clients);
+}
 function addSalary() {
-  const name = document.getElementById('sal-name').value.trim();
-  const type = document.getElementById('sal-type').value;
-  const amt  = parseFloat(document.getElementById('sal-amt').value)||0;
+  const name   = document.getElementById('sal-name').value.trim();
+  const type   = document.getElementById('sal-type').value;
+  const amt    = parseFloat(document.getElementById('sal-amt').value)||0;
+  const client = type === 'Outsourced Talent' ? (document.getElementById('sal-client').value || '') : 'N/A';
   if (!name || !amt) return toast('Please fill in name and amount');
-  getM(currentYear, currentMonth).salaries.push({ name, type, amt });
+  if (type === 'Outsourced Talent' && !client) return toast('Please select a client for this outsourced talent');
+  getM(currentYear, currentMonth).salaries.push({ name, type, client, amt });
   document.getElementById('sal-name').value = '';
   document.getElementById('sal-amt').value  = '';
   saveData(); renderEntry(); renderDashboard(); toast('Salary entry added');
