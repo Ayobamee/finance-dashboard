@@ -508,7 +508,7 @@ body{
 <!-- LOGIN SCREEN -->
 <div id="login-screen" style="display:none;position:fixed;inset:0;background:var(--ink);z-index:9999;align-items:center;justify-content:center;flex-direction:column">
   <div style="background:#fff;border-radius:16px;padding:44px 48px;width:100%;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,0.4)">
-    <div style="font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-0.5px;margin-bottom:4px;color:var(--ink)">Quales<span style="color:#51886e">Tech</span> Finance</div>
+    <div style="font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-0.5px;margin-bottom:4px;color:var(--ink)">Quales<span style="color:#437960"> Finance</span></div>
     <div style="font-size:13px;color:var(--ink3);margin-bottom:32px">Enter your team password to continue</div>
     <div style="margin-bottom:14px">
       <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--ink3);display:block;margin-bottom:6px">Password</label>
@@ -522,7 +522,7 @@ body{
 
 <div id="app-shell" style="display:none">
 <div class="topnav">
-  <div class="brand">Quales<span>Tech</span> Finance</div>
+  <div class="brand">Quales<span>Tek</span> Finance</div>
   <div class="navtab active" onclick="showScreen('dashboard',this)">P&amp;L Dashboard</div>
   <div class="navtab" onclick="showScreen('entry',this)">Data Entry</div>
   <div class="navtab" onclick="showScreen('yearview',this)">Year Overview</div>
@@ -802,6 +802,22 @@ body{
         <button class="btn-add" onclick="addSalary()">Add</button>
       </div>
       <div class="entry-list" id="sal-list"></div>
+
+      <!-- Copy from previous month -->
+      <div id="copy-sal-bar" style="margin-top:14px;padding:12px 14px;background:var(--surface);border-radius:10px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--ink2)" id="copy-sal-label">Copy salaries from previous month</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:2px" id="copy-sal-sub">Saves time — you can edit amounts after copying</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <button class="btn-add ghost" style="font-size:12px;padding:6px 14px" onclick="copySalariesFromPrevMonth()">Copy</button>
+        </div>
+      </div>
+
+      <!-- Copy bonuses too? confirmation bar — hidden by default -->
+      <div id="copy-confirm-bar" style="display:none;margin-top:10px;padding:12px 14px;background:var(--green-l);border-radius:10px;border:1px solid rgba(45,106,79,0.2);font-size:12px;color:var(--green)">
+        <span id="copy-confirm-msg"></span>
+      </div>
     </div>
     <div class="form-section">
       <h3>Bonuses &amp; Extras</h3>
@@ -1322,6 +1338,21 @@ function renderGrossMargin(d) {
 /* ── ENTRY RENDER ─────────────────────────────── */
 function renderEntry() {
   const d = getM(currentYear, currentMonth);
+
+  // Update copy bar label to show which month it will copy from
+  let pm = currentMonth - 1, py = currentYear;
+  if (pm < 0) { pm = 11; py--; }
+  const prevD = getM(py, pm);
+  const copyLabel = document.getElementById('copy-sal-label');
+  const copySub   = document.getElementById('copy-sal-sub');
+  if (copyLabel) {
+    const count = prevD.salaries ? prevD.salaries.length : 0;
+    copyLabel.textContent = `Copy ${count} salary ${count === 1 ? 'entry' : 'entries'} from ${MONTHS[pm]} ${py}`;
+    copySub.textContent   = count > 0 ? 'Saves time — you can edit amounts after copying' : 'No salary entries in previous month to copy';
+    document.querySelector('#copy-sal-bar button').disabled = count === 0;
+    document.querySelector('#copy-sal-bar button').style.opacity = count === 0 ? '0.4' : '1';
+  }
+
   renderClients(d);
   renderEditableList('cexp-list', d.cexp,     'cexp',     [
     { field:'cat', label:'Category',    type:'text',   flex:1 },
@@ -1512,6 +1543,42 @@ function addSalary() {
   document.getElementById('sal-amt').value  = '';
   saveData(); renderEntry(); renderDashboard(); toast('Salary entry added');
 }
+function copySalariesFromPrevMonth() {
+  // Work out previous month
+  let pm = currentMonth - 1, py = currentYear;
+  if (pm < 0) { pm = 11; py--; }
+
+  const prevD = getM(py, pm);
+  const currD = getM(currentYear, currentMonth);
+
+  if (!prevD.salaries || prevD.salaries.length === 0) {
+    toast('No salary entries found in ' + MONTHS[pm] + ' ' + py);
+    return;
+  }
+
+  // Check if current month already has salaries
+  if (currD.salaries.length > 0) {
+    // Ask for confirmation via a confirm dialog
+    if (!confirm(`${MONTHS[currentMonth]} ${currentYear} already has ${currD.salaries.length} salary entries. This will ADD the ${prevD.salaries.length} entries from ${MONTHS[pm]} on top. Continue?`)) return;
+  }
+
+  // Deep copy entries from previous month
+  const copied = prevD.salaries.map(s => ({ ...s }));
+  currD.salaries.push(...copied);
+
+  // Show success message
+  const bar = document.getElementById('copy-confirm-bar');
+  const msg = document.getElementById('copy-confirm-msg');
+  bar.style.display = 'block';
+  msg.textContent = `✓ Copied ${copied.length} salary entries from ${MONTHS[pm]} ${py}. Review and adjust any amounts that have changed.`;
+  setTimeout(() => { bar.style.display = 'none'; }, 5000);
+
+  saveData();
+  renderEntry();
+  renderDashboard();
+  toast(copied.length + ' salary entries copied from ' + MONTHS[pm]);
+}
+
 function addBonus() {
   const desc = document.getElementById('bon-desc').value.trim();
   const amt  = parseFloat(document.getElementById('bon-amt').value)||0;
