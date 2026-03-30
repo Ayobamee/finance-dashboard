@@ -508,7 +508,7 @@ body{
 <!-- LOGIN SCREEN -->
 <div id="login-screen" style="display:none;position:fixed;inset:0;background:var(--ink);z-index:9999;align-items:center;justify-content:center;flex-direction:column">
   <div style="background:#fff;border-radius:16px;padding:44px 48px;width:100%;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,0.4)">
-    <div style="font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-0.5px;margin-bottom:4px;color:var(--ink)">Quales<span style="color:#52b788">Tek</span> Finance</div>
+    <div style="font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-0.5px;margin-bottom:4px;color:var(--ink)">Quales<span style="color:#51886e">Tech</span> Finance</div>
     <div style="font-size:13px;color:var(--ink3);margin-bottom:32px">Enter your team password to continue</div>
     <div style="margin-bottom:14px">
       <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--ink3);display:block;margin-bottom:6px">Password</label>
@@ -789,7 +789,7 @@ body{
             <option value="Learning Staff">Learning Staff</option>
           </select>
         </div>
-        <div class="field" id="sal-client-field" style="max-width:140px;display:none">
+        <div class="field" id="sal-client-field" style="max-width:140px;display:block">
           <label>Client</label>
           <select id="sal-client"><option value="">— select —</option></select>
         </div>
@@ -1167,7 +1167,13 @@ function showEntryTab(tab, el) {
   document.querySelectorAll('.subtab').forEach(t => t.classList.remove('active'));
   document.getElementById('etab-' + tab).style.display = 'grid';
   if (el) el.classList.add('active');
-  if (tab === 'salaries') populateSalClientDropdown();
+  if (tab === 'salaries') {
+    // Always populate client dropdown — field is visible by default for Outsourced Talent
+    populateSalClientDropdown();
+    // Show/hide client field based on current type selection
+    const currentType = document.getElementById('sal-type').value;
+    document.getElementById('sal-client-field').style.display = currentType === 'Outsourced Talent' ? 'block' : 'none';
+  }
 }
 
 /* ── DASHBOARD RENDER ─────────────────────────── */
@@ -1481,7 +1487,7 @@ function addLearnExp() {
 function toggleSalClientField(type) {
   const field = document.getElementById('sal-client-field');
   field.style.display = type === 'Outsourced Talent' ? 'block' : 'none';
-  populateSalClientDropdown();
+  if (type === 'Outsourced Talent') populateSalClientDropdown();
 }
 function populateSalClientDropdown() {
   const sel = document.getElementById('sal-client');
