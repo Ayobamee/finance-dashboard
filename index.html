@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Quales Tech Finance Dashboard</title>
+<title>Quales Finance Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -508,7 +508,7 @@ body{
 <!-- LOGIN SCREEN -->
 <div id="login-screen" style="display:none;position:fixed;inset:0;background:var(--ink);z-index:9999;align-items:center;justify-content:center;flex-direction:column">
   <div style="background:#fff;border-radius:16px;padding:44px 48px;width:100%;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,0.4)">
-    <div style="font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-0.5px;margin-bottom:4px;color:var(--ink)">Quales<span style="color:#52b788">Tech</span> Finance</div>
+    <div style="font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-0.5px;margin-bottom:4px;color:var(--ink)">Quales<span style="color:#52b788">Tek</span> Finance</div>
     <div style="font-size:13px;color:var(--ink3);margin-bottom:32px">Enter your team password to continue</div>
     <div style="margin-bottom:14px">
       <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--ink3);display:block;margin-bottom:6px">Password</label>
@@ -527,6 +527,7 @@ body{
   <div class="navtab" onclick="showScreen('entry',this)">Data Entry</div>
   <div class="navtab" onclick="showScreen('yearview',this)">Year Overview</div>
   <div class="navtab" onclick="showScreen('exec',this)">Exec View</div>
+  <div class="navtab" onclick="showScreen('health',this)">&#9679; Health Check</div>
   <div style="margin-left:auto;padding-right:20px">
     <button onclick="doLogout()" style="padding:6px 14px;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,0.18)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">Sign out</button>
   </div>
@@ -780,8 +781,12 @@ body{
         <div class="field" style="max-width:130px">
           <label>Type</label>
           <select id="sal-type" onchange="toggleSalClientField(this.value)">
-            <option value="Core Staff">Core Staff</option>
             <option value="Outsourced Talent">Outsourced Talent</option>
+            <option value="Exec / Co-founder">Exec / Co-founder</option>
+            <option value="HR &amp; Finance">HR &amp; Finance</option>
+            <option value="BDM">BDM</option>
+            <option value="Intern">Intern</option>
+            <option value="Learning Staff">Learning Staff</option>
           </select>
         </div>
         <div class="field" id="sal-client-field" style="max-width:140px;display:none">
@@ -931,6 +936,74 @@ body{
 
 
 <!-- ═══════════════════════════════════════════════
+     SCREEN 5 — HEALTH CHECK
+════════════════════════════════════════════════ -->
+<div class="screen" id="screen-health">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:26px;flex-wrap:wrap">
+    <h2 style="font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-0.5px;flex:1">Overhead Health Check</h2>
+    <button class="mth-btn" onclick="changeMonth(-1)">← Prev</button>
+    <span id="health-month-label" style="font-size:15px;font-weight:500;color:var(--ink2)">—</span>
+    <button class="mth-btn" onclick="changeMonth(1)">Next →</button>
+  </div>
+
+  <!-- Traffic light + gauge -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px">
+    <div class="card" style="text-align:center;padding:32px 24px">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--ink3);margin-bottom:20px">Overhead Health Status</div>
+      <div id="health-light" style="width:80px;height:80px;border-radius:50%;margin:0 auto 16px;transition:background .4s;box-shadow:0 0 0 8px rgba(0,0,0,0.06)"></div>
+      <div id="health-status-label" style="font-size:22px;font-weight:500;margin-bottom:6px">—</div>
+      <div id="health-ratio-label" style="font-size:14px;color:var(--ink3)">No data yet</div>
+    </div>
+    <div class="card" style="padding:28px 24px">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--ink3);margin-bottom:16px">Overhead Ratio Gauge</div>
+      <div style="position:relative;height:12px;background:linear-gradient(to right,#d8f3dc,#fff3cd,#fde8e8);border-radius:99px;margin-bottom:10px;overflow:visible">
+        <div id="gauge-needle" style="position:absolute;top:50%;width:16px;height:16px;background:var(--ink);border-radius:50%;transform:translate(-50%,-50%);transition:left .6s cubic-bezier(.34,1.56,.64,1);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.2)"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink3);margin-bottom:20px">
+        <span>0%</span><span>30%</span><span>50%</span><span>100%+</span>
+      </div>
+      <div style="display:flex;gap:10px;font-size:11px">
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#52b788;display:inline-block"></span>Healthy &lt;30%</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#f59f00;display:inline-block"></span>Caution 30–50%</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#e03131;display:inline-block"></span>Critical &gt;50%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Advisory message -->
+  <div id="health-advisory" class="card" style="margin-bottom:20px;border-left:4px solid var(--border);padding:20px 24px">
+    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--ink3);margin-bottom:8px">Advisory</div>
+    <div id="health-advisory-text" style="font-size:14px;line-height:1.7;color:var(--ink2)">Enter salary data to see your overhead advisory.</div>
+  </div>
+
+  <!-- Overhead breakdown -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:#e03131"></span>Overhead Cost Breakdown</div>
+      <table class="mini-table">
+        <thead><tr><th>Category</th><th>Total Cost</th><th>% of Revenue</th></tr></thead>
+        <tbody id="overhead-breakdown-rows"></tbody>
+        <tfoot><tr class="total-row"><td colspan="1">Total Overhead</td><td id="overhead-total-amt" class="neg">₦0</td><td id="overhead-total-pct" style="font-weight:600">—</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot dot-green"></span>Revenue-Generating Staff</div>
+      <table class="mini-table">
+        <thead><tr><th>Talent</th><th>Client</th><th>Salary</th></tr></thead>
+        <tbody id="revenue-staff-rows"></tbody>
+        <tfoot><tr class="total-row"><td colspan="2">Total Talent Cost</td><td id="revenue-staff-total" class="neg">₦0</td></tr></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Trend chart -->
+  <div class="card">
+    <div class="card-title">Overhead ratio trend — last 6 months</div>
+    <div class="chart-wrap" style="height:220px"><canvas id="healthTrendChart"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
      JAVASCRIPT
 ════════════════════════════════════════════════ -->
 <script>
@@ -1069,6 +1142,7 @@ function showScreen(id, el) {
   if (id === 'yearview')  renderYearView();
   if (id === 'exec')      renderExec();
   if (id === 'entry')     renderEntry();
+  if (id === 'health')    renderHealthCheck();
 }
 
 function changeMonth(dir) {
@@ -1077,6 +1151,7 @@ function changeMonth(dir) {
   if (currentMonth > 11) { currentMonth = 0;  currentYear++; }
   renderDashboard();
   renderEntry();
+  if (document.getElementById('screen-health').classList.contains('active')) renderHealthCheck();
 }
 
 function changeYear(dir) {
@@ -1287,7 +1362,7 @@ function renderSalaryList(id, arr, clients) {
   const clientOpts = '<option value="N/A">N/A (Core Staff)</option>' +
     clients.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
   el.innerHTML = arr.map((e, i) => {
-    const typeOpts = ['Core Staff','Outsourced Talent'].map(o => `<option${o===e.type?' selected':''}>${o}</option>`).join('');
+    const typeOpts = ['Outsourced Talent','Exec / Co-founder','HR & Finance','BDM','Intern','Learning Staff'].map(o => `<option${o===e.type?' selected':''}>${o}</option>`).join('');
     const cVal = e.client || 'N/A';
     const cOpts = clientOpts.replace(`value="${cVal}"`, `value="${cVal}" selected`);
     return `<div class="talent-row" style="display:flex;gap:8px;align-items:center;padding:6px 4px;border-bottom:1px solid rgba(0,0,0,0.05)">
@@ -1590,6 +1665,139 @@ function renderExec() {
     </tr>`;
   }
   document.getElementById('exec-table-body').innerHTML = rows;
+}
+
+/* ── Overhead config ─────────────────────────── */
+const OVERHEAD_CATEGORIES = ['Exec / Co-founder','HR & Finance','BDM','Intern','Learning Staff'];
+
+/* ── Health Check Render ──────────────────────── */
+let healthTrendInst = null;
+function renderHealthCheck() {
+  const y = currentYear, m = currentMonth;
+  const d = getM(y, m);
+  const c = calcMonth(y, m);
+  document.getElementById('health-month-label').textContent = MONTHS[m] + ' ' + y;
+
+  // Separate overhead vs revenue-generating salaries
+  const overheadMap = {};
+  OVERHEAD_CATEGORIES.forEach(cat => overheadMap[cat] = 0);
+  let revStaffTotal = 0;
+
+  d.salaries.forEach(s => {
+    if (OVERHEAD_CATEGORIES.includes(s.type)) {
+      overheadMap[s.type] = (overheadMap[s.type] || 0) + (parseFloat(s.amt)||0);
+    } else if (s.type === 'Outsourced Talent') {
+      revStaffTotal += (parseFloat(s.amt)||0);
+    }
+  });
+
+  const totalOverhead = Object.values(overheadMap).reduce((a,b) => a+b, 0);
+  const consultRev    = c.consultRev;
+  const ratio         = consultRev > 0 ? totalOverhead / consultRev : null;
+  const ratioPct      = ratio !== null ? Math.round(ratio * 100) : null;
+
+  // Traffic light
+  const light = document.getElementById('health-light');
+  const statusLabel = document.getElementById('health-status-label');
+  const ratioLabel  = document.getElementById('health-ratio-label');
+  const advisory    = document.getElementById('health-advisory');
+  const advisoryTxt = document.getElementById('health-advisory-text');
+
+  if (ratio === null) {
+    light.style.background = '#d1d1cc';
+    statusLabel.textContent = 'No Data';
+    statusLabel.style.color = 'var(--ink3)';
+    ratioLabel.textContent  = 'Add salary entries and client revenue to see your health status.';
+    advisory.style.borderLeftColor = 'var(--border)';
+    advisoryTxt.textContent = 'Enter consulting revenue and salary data to see your overhead advisory.';
+    document.getElementById('gauge-needle').style.left = '0%';
+  } else if (ratioPct < 30) {
+    light.style.background = '#52b788';
+    light.style.boxShadow  = '0 0 0 8px rgba(82,183,136,0.15)';
+    statusLabel.textContent = 'Healthy';
+    statusLabel.style.color = 'var(--green)';
+    ratioLabel.textContent  = `Overhead is ${ratioPct}% of consulting revenue`;
+    advisory.style.borderLeftColor = 'var(--green-mid)';
+    advisoryTxt.textContent = `Your overhead is well under control at ${ratioPct}% of consulting revenue. The business is lean and your revenue-generating talents are carrying the weight efficiently. Keep an eye on this as you scale — the threshold gets harder to maintain as you add more support staff.`;
+  } else if (ratioPct <= 50) {
+    light.style.background = '#f59f00';
+    light.style.boxShadow  = '0 0 0 8px rgba(245,159,0,0.15)';
+    statusLabel.textContent = 'Caution';
+    statusLabel.style.color = 'var(--gold)';
+    ratioLabel.textContent  = `Overhead is ${ratioPct}% of consulting revenue`;
+    advisory.style.borderLeftColor = '#f59f00';
+    // Find biggest overhead category
+    const biggest = Object.entries(overheadMap).sort((a,b) => b[1]-a[1])[0];
+    advisoryTxt.textContent = `Overhead is at ${ratioPct}% of consulting revenue — approaching the danger zone. Your largest overhead category is ${biggest[0]} at ${fmtFull(biggest[1])}. Consider whether new client wins or talent additions can increase revenue before adding more overhead staff. If margins are tight this month, review BDM and intern costs first as these are typically the most flexible.`;
+  } else {
+    light.style.background = '#e03131';
+    light.style.boxShadow  = '0 0 0 8px rgba(224,49,49,0.15)';
+    statusLabel.textContent = 'Critical';
+    statusLabel.style.color = 'var(--red)';
+    ratioLabel.textContent  = `Overhead is ${ratioPct}% of consulting revenue — above safe threshold`;
+    advisory.style.borderLeftColor = 'var(--red-mid)';
+    const biggest = Object.entries(overheadMap).sort((a,b) => b[1]-a[1])[0];
+    advisoryTxt.textContent = `⚠ Overhead has exceeded 50% of consulting revenue at ${ratioPct}%. This is significantly eroding your margins. Your top overhead cost is ${biggest[0]} at ${fmtFull(biggest[1])}. Immediate actions to consider: (1) Prioritise closing at least one new client to grow the revenue base, (2) Review intern and BDM spend for any short-term reductions, (3) Check if any Learning Staff costs can be partially offset by training revenue, (4) Set a target to bring this ratio below 40% within 2 months.`;
+  }
+
+  // Gauge needle — map 0–100% ratio to 0–100% width (cap at 100%)
+  const needlePct = ratio !== null ? Math.min(ratioPct, 100) : 0;
+  document.getElementById('gauge-needle').style.left = needlePct + '%';
+
+  // Overhead breakdown table
+  let breakRows = '';
+  OVERHEAD_CATEGORIES.forEach(cat => {
+    const amt = overheadMap[cat] || 0;
+    const pct = consultRev > 0 && amt > 0 ? Math.round(amt / consultRev * 100) + '%' : '—';
+    if (amt > 0) breakRows += `<tr><td>${cat}</td><td class="neg">${fmtFull(amt)}</td><td style="color:var(--ink3)">${pct}</td></tr>`;
+  });
+  document.getElementById('overhead-breakdown-rows').innerHTML = breakRows || '<tr><td colspan="3" class="empty-state">No overhead entries tagged yet</td></tr>';
+  document.getElementById('overhead-total-amt').textContent = fmtFull(totalOverhead);
+  document.getElementById('overhead-total-pct').textContent = ratioPct !== null ? ratioPct + '%' : '—';
+  document.getElementById('overhead-total-pct').style.color = ratio === null ? 'var(--ink3)' : ratioPct < 30 ? 'var(--green)' : ratioPct <= 50 ? 'var(--gold)' : 'var(--red)';
+
+  // Revenue staff table
+  let revRows = '';
+  d.salaries.filter(s => s.type === 'Outsourced Talent').forEach(s => {
+    revRows += `<tr><td>${s.name}</td><td style="color:var(--ink3);font-size:12px">${s.client||'—'}</td><td class="neg">${fmtFull(s.amt)}</td></tr>`;
+  });
+  document.getElementById('revenue-staff-rows').innerHTML = revRows || '<tr><td colspan="3" class="empty-state">No outsourced talent salaries yet</td></tr>';
+  document.getElementById('revenue-staff-total').textContent = fmtFull(revStaffTotal);
+
+  // Trend chart — last 6 months overhead ratio
+  const trendLabels = [], trendData = [], trendColors = [];
+  for (let i = 5; i >= 0; i--) {
+    let tm = m - i, ty = y;
+    if (tm < 0) { tm += 12; ty--; }
+    const td2 = getM(ty, tm);
+    const tc   = calcMonth(ty, tm);
+    const tOverhead = td2.salaries.filter(s => OVERHEAD_CATEGORIES.includes(s.type)).reduce((s,e) => s+(parseFloat(e.amt)||0),0);
+    const tRatio    = tc.consultRev > 0 ? Math.round(tOverhead / tc.consultRev * 100) : 0;
+    trendLabels.push(SHORT_M[tm] + ' ' + ty);
+    trendData.push(tRatio);
+    trendColors.push(tRatio < 30 ? 'rgba(82,183,136,0.7)' : tRatio <= 50 ? 'rgba(245,159,0,0.7)' : 'rgba(224,49,49,0.7)');
+  }
+
+  if (healthTrendInst) healthTrendInst.destroy();
+  healthTrendInst = new Chart(document.getElementById('healthTrendChart'), {
+    type: 'bar',
+    data: {
+      labels: trendLabels,
+      datasets: [
+        { type:'bar', label:'Overhead %', data:trendData, backgroundColor:trendColors, borderRadius:4, borderWidth:0 },
+        { type:'line', label:'30% threshold', data:Array(6).fill(30), borderColor:'#52b788', borderDash:[6,4], borderWidth:1.5, pointRadius:0, backgroundColor:'transparent' },
+        { type:'line', label:'50% threshold', data:Array(6).fill(50), borderColor:'#e03131', borderDash:[6,4], borderWidth:1.5, pointRadius:0, backgroundColor:'transparent' }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: ctx => ctx.dataset.label + ': ' + ctx.raw + '%' } } },
+      scales:{
+        x:{ grid:{ display:false }, ticks:{ font:{ size:11 } } },
+        y:{ min:0, max:Math.max(100, ...trendData)+10, grid:{ color:'rgba(0,0,0,0.05)' }, ticks:{ callback: v => v+'%', font:{ size:11 } } }
+      }
+    }
+  });
 }
 
 /* ── Logout ───────────────────────────────────── */
