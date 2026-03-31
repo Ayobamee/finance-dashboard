@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Quales Finance Dashboard</title>
+<title>Finance Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -508,7 +508,7 @@ body{
 <!-- LOGIN SCREEN -->
 <div id="login-screen" style="display:none;position:fixed;inset:0;background:var(--ink);z-index:9999;align-items:center;justify-content:center;flex-direction:column">
   <div style="background:#fff;border-radius:16px;padding:44px 48px;width:100%;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,0.4)">
-    <div style="font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-0.5px;margin-bottom:4px;color:var(--ink)">Quales<span style="color:#437960"> Finance</span></div>
+    <div style="font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-0.5px;margin-bottom:4px;color:var(--ink)">QA<span style="color:#2b5542">Consulting</span> Finance</div>
     <div style="font-size:13px;color:var(--ink3);margin-bottom:32px">Enter your team password to continue</div>
     <div style="margin-bottom:14px">
       <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--ink3);display:block;margin-bottom:6px">Password</label>
@@ -522,7 +522,7 @@ body{
 
 <div id="app-shell" style="display:none">
 <div class="topnav">
-  <div class="brand">Quales<span>Tek</span> Finance</div>
+  <div class="brand">Quales<span>Consulting</span> Finance</div>
   <div class="navtab active" onclick="showScreen('dashboard',this)">P&amp;L Dashboard</div>
   <div class="navtab" onclick="showScreen('entry',this)">Data Entry</div>
   <div class="navtab" onclick="showScreen('yearview',this)">Year Overview</div>
@@ -693,6 +693,16 @@ body{
     <button class="mth-btn" onclick="changeMonth(1)">Next →</button>
     <span class="yr-badge" id="entry-year-badge">—</span>
   </div>
+
+  <!-- Master copy banner -->
+  <div id="master-copy-bar" style="background:var(--card);border:1px dashed var(--border);border-radius:12px;padding:14px 20px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:var(--shadow)">
+    <div>
+      <div style="font-size:13px;font-weight:600;color:var(--ink)" id="master-copy-label">Copy all entries from previous month</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:2px" id="master-copy-sub">Copies clients &amp; talents, consulting expenses, learning revenue &amp; expenses, and salaries</div>
+    </div>
+    <button id="master-copy-btn" class="btn-add" style="white-space:nowrap;background:#1864ab" onclick="copyEntireMonth()">Copy Entire Month</button>
+  </div>
+  <div id="master-copy-confirm" style="display:none;margin-bottom:16px;padding:12px 16px;background:var(--green-l);border-radius:10px;border:1px solid rgba(45,106,79,0.2);font-size:12px;color:var(--green)" id="master-copy-confirm"></div>
 
   <div class="subtabs">
     <div class="subtab active" onclick="showEntryTab('consulting',this)">Consulting</div>
@@ -1226,8 +1236,9 @@ function renderDashboard() {
   let cRevRows = '';
   d.clients.forEach(cl => {
     const ct = (cl.talents||[]).reduce((s, t) => s + (parseFloat(t.rate)||0), 0);
-    if (ct > 0 || cl.talents.length > 0)
-      cRevRows += `<tr><td>${cl.name} <span style="color:var(--ink3);font-size:11px">(${cl.talents.length} talent${cl.talents.length!==1?'s':''})</span></td><td class="pos">${fmtFull(ct)}</td></tr>`;
+    const activeTalents = (cl.talents||[]).filter(t => t.name && t.name.trim() && (parseFloat(t.rate)||0) > 0);
+    if (ct > 0 || activeTalents.length > 0)
+      cRevRows += `<tr><td>${cl.name} <span style="color:var(--ink3);font-size:11px">(${activeTalents.length} talent${activeTalents.length!==1?'s':''})</span></td><td class="pos">${fmtFull(ct)}</td></tr>`;
   });
   document.getElementById('consult-rev-rows').innerHTML  = cRevRows || '<tr><td colspan="2" class="empty-state">No client entries yet</td></tr>';
   document.getElementById('consult-rev-total').textContent = fmtFull(c.consultRev);
@@ -1339,10 +1350,21 @@ function renderGrossMargin(d) {
 function renderEntry() {
   const d = getM(currentYear, currentMonth);
 
-  // Update copy bar label to show which month it will copy from
+  // Update master copy bar label
   let pm = currentMonth - 1, py = currentYear;
   if (pm < 0) { pm = 11; py--; }
   const prevD = getM(py, pm);
+  const masterLabel = document.getElementById('master-copy-label');
+  const masterSub   = document.getElementById('master-copy-sub');
+  const masterBtn   = document.getElementById('master-copy-btn');
+  const prevHasAny  = prevD && ((prevD.clients&&prevD.clients.length)||(prevD.cexp&&prevD.cexp.length)||(prevD.lrev&&prevD.lrev.length)||(prevD.lexp&&prevD.lexp.length)||(prevD.salaries&&prevD.salaries.length));
+  if (masterLabel) {
+    masterLabel.textContent = prevHasAny ? `Copy all entries from ${MONTHS[pm]} ${py}` : `No data in ${MONTHS[pm]} ${py} to copy`;
+    masterSub.textContent   = prevHasAny ? 'Copies clients & talents, consulting expenses, learning revenue & expenses, and salaries' : 'Enter data in a previous month first';
+    masterBtn.disabled      = !prevHasAny;
+    masterBtn.style.opacity = prevHasAny ? '1' : '0.4';
+  }
+  // Also update salary-specific copy bar
   const copyLabel = document.getElementById('copy-sal-label');
   const copySub   = document.getElementById('copy-sal-sub');
   if (copyLabel) {
@@ -1577,6 +1599,89 @@ function copySalariesFromPrevMonth() {
   renderEntry();
   renderDashboard();
   toast(copied.length + ' salary entries copied from ' + MONTHS[pm]);
+}
+
+function copyEntireMonth() {
+  // Work out previous month
+  let pm = currentMonth - 1, py = currentYear;
+  if (pm < 0) { pm = 11; py--; }
+
+  const prevD = getM(py, pm);
+  const currD = getM(currentYear, currentMonth);
+
+  // Check if previous month has ANY data at all
+  const prevHasData = (prevD.clients && prevD.clients.length > 0) ||
+                      (prevD.cexp    && prevD.cexp.length > 0)    ||
+                      (prevD.lrev    && prevD.lrev.length > 0)    ||
+                      (prevD.lexp    && prevD.lexp.length > 0)    ||
+                      (prevD.salaries && prevD.salaries.length > 0);
+
+  if (!prevHasData) {
+    toast('No data found in ' + MONTHS[pm] + ' ' + py + ' to copy');
+    return;
+  }
+
+  // Check if current month already has data
+  const currHasData = (currD.clients && currD.clients.length > 0) ||
+                      (currD.cexp    && currD.cexp.length > 0)    ||
+                      (currD.lrev    && currD.lrev.length > 0)    ||
+                      (currD.lexp    && currD.lexp.length > 0)    ||
+                      (currD.salaries && currD.salaries.length > 0);
+
+  if (currHasData) {
+    if (!confirm(`${MONTHS[currentMonth]} ${currentYear} already has data. Copying will ADD entries from ${MONTHS[pm]} ${py} on top of existing entries. Continue?`)) return;
+  }
+
+  // Tally what we're copying for the summary message
+  const counts = { clients:0, cexp:0, lrev:0, lexp:0, salaries:0 };
+
+  // Deep copy clients & talents
+  if (prevD.clients && prevD.clients.length > 0) {
+    const copiedClients = JSON.parse(JSON.stringify(prevD.clients));
+    // Merge clients — if client name already exists in current month, skip to avoid duplicates
+    copiedClients.forEach(pc => {
+      const exists = currD.clients.find(cc => cc.name === pc.name);
+      if (!exists) { currD.clients.push(pc); counts.clients++; }
+    });
+  }
+
+  // Deep copy consulting expenses
+  if (prevD.cexp && prevD.cexp.length > 0) {
+    prevD.cexp.forEach(e => { currD.cexp.push({...e}); counts.cexp++; });
+  }
+
+  // Deep copy learning revenue
+  if (prevD.lrev && prevD.lrev.length > 0) {
+    prevD.lrev.forEach(e => { currD.lrev.push({...e}); counts.lrev++; });
+  }
+
+  // Deep copy learning expenses
+  if (prevD.lexp && prevD.lexp.length > 0) {
+    prevD.lexp.forEach(e => { currD.lexp.push({...e}); counts.lexp++; });
+  }
+
+  // Deep copy salaries
+  if (prevD.salaries && prevD.salaries.length > 0) {
+    prevD.salaries.forEach(e => { currD.salaries.push({...e}); counts.salaries++; });
+  }
+
+  // Build summary message
+  const parts = [];
+  if (counts.clients > 0)   parts.push(counts.clients + ' client' + (counts.clients!==1?'s':'') + ' (with talents)');
+  if (counts.cexp > 0)      parts.push(counts.cexp + ' consulting expense' + (counts.cexp!==1?'s':''));
+  if (counts.lrev > 0)      parts.push(counts.lrev + ' learning revenue entr' + (counts.lrev!==1?'ies':'y'));
+  if (counts.lexp > 0)      parts.push(counts.lexp + ' learning expense' + (counts.lexp!==1?'s':''));
+  if (counts.salaries > 0)  parts.push(counts.salaries + ' salary entr' + (counts.salaries!==1?'ies':'y'));
+
+  const confirmBar = document.getElementById('master-copy-confirm');
+  confirmBar.style.display = 'block';
+  confirmBar.textContent = '✓ Copied from ' + MONTHS[pm] + ' ' + py + ': ' + parts.join(', ') + '. Review and adjust any amounts that have changed.';
+  setTimeout(() => { confirmBar.style.display = 'none'; }, 7000);
+
+  saveData();
+  renderEntry();
+  renderDashboard();
+  toast('✓ Entire month copied from ' + MONTHS[pm]);
 }
 
 function addBonus() {
