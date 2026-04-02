@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Finance Dashboard</title>
+<title>QATek Finance Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -508,7 +508,7 @@ body{
 <!-- LOGIN SCREEN -->
 <div id="login-screen" style="display:none;position:fixed;inset:0;background:var(--ink);z-index:9999;align-items:center;justify-content:center;flex-direction:column">
   <div style="background:#fff;border-radius:16px;padding:44px 48px;width:100%;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,0.4)">
-    <div style="font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-0.5px;margin-bottom:4px;color:var(--ink)">Quales <span style="color:#2c5542">Consulting</span> Finance</div>
+    <div style="font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-0.5px;margin-bottom:4px;color:var(--ink)">QA<span style="color:#52b788">Tek</span> Finance</div>
     <div style="font-size:13px;color:var(--ink3);margin-bottom:32px">Enter your team password to continue</div>
     <div style="margin-bottom:14px">
       <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--ink3);display:block;margin-bottom:6px">Password</label>
@@ -522,14 +522,14 @@ body{
 
 <div id="app-shell" style="display:none">
 <div class="topnav">
-  <div class="brand">Quales <span>Consulting</span> Finance</div>
+  <div class="brand">QA<span>Tek</span> Finance</div>
   <div class="navtab active" onclick="showScreen('dashboard',this)">P&amp;L Dashboard</div>
   <div class="navtab" onclick="showScreen('entry',this)">Data Entry</div>
   <div class="navtab" onclick="showScreen('yearview',this)">Year Overview</div>
   <div class="navtab" onclick="showScreen('exec',this)">Exec View</div>
   <div class="navtab" onclick="showScreen('health',this)">&#9679; Health Check</div>
   <div style="margin-left:auto;padding-right:20px">
-    <button onclick="doLogout()" style="padding:6px 14px;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,0.18)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">Log out</button>
+    <button onclick="doLogout()" style="padding:6px 14px;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,0.18)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">Sign out</button>
   </div>
 </div>
 
@@ -939,6 +939,29 @@ body{
     </div>
   </div>
 
+  <!-- Quarterly Summary -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px">
+    <div class="card">
+      <div class="card-title">Quarterly P&amp;L summary</div>
+      <table class="mini-table" style="margin-top:4px">
+        <thead>
+          <tr>
+            <th>Quarter</th>
+            <th>Revenue</th>
+            <th>Expenses</th>
+            <th>Net P&amp;L</th>
+            <th>Margin</th>
+          </tr>
+        </thead>
+        <tbody id="quarterly-table-body"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">Quarterly revenue vs expenses</div>
+      <div class="chart-wrap" style="height:200px"><canvas id="quarterlyChart"></canvas></div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-title">Month-by-month P&amp;L breakdown</div>
     <div style="overflow-x:auto">
@@ -1043,9 +1066,10 @@ let viewYear     = currentYear;
 let data         = {}; // data[year][month] = {clients, cexp, lrev, lexp, salaries, bonuses}
 
 // Chart instances
-let yearChartInst = null;
-let execPieInst   = null;
-let execWaterInst = null;
+let yearChartInst    = null;
+let execPieInst      = null;
+let execWaterInst    = null;
+let quarterlyChartInst = null;
 
 /* ── Data helpers ─────────────────────────────── */
 function getM(y, m) {
@@ -1822,6 +1846,68 @@ function renderExec() {
       scales:{
         x:{ grid:{ display:false }, ticks:{ font:{ size:10, family:"'DM Sans', sans-serif" }, maxRotation:0 } },
         y:{ grid:{ color:'rgba(0,0,0,0.05)' }, ticks:{ callback: v => { const a=Math.abs(v); return (v<0?'-':'')+'₦'+(a>=1000?(a/1000).toFixed(0)+'K':a); }, font:{ size:10, family:"'DM Sans', sans-serif" } } }
+      }
+    }
+  });
+
+  // Quarterly summary
+  const quarters = [
+    { label:'Q1', name:'Jan – Mar', months:[0,1,2] },
+    { label:'Q2', name:'Apr – Jun', months:[3,4,5] },
+    { label:'Q3', name:'Jul – Sep', months:[6,7,8] },
+    { label:'Q4', name:'Oct – Dec', months:[9,10,11] }
+  ];
+
+  let qRows = '';
+  const qRevData=[], qExpData=[], qLabels=[];
+  quarters.forEach(q => {
+    let qRev=0, qExp=0, qCR=0, qLR=0;
+    q.months.forEach(m => {
+      const qc = calcMonth(y, m);
+      qRev += qc.totalRev;
+      qExp += qc.totalExp;
+      qCR  += qc.consultRev;
+      qLR  += qc.learnRev;
+    });
+    const qNet  = qRev - qExp;
+    const qMg   = qRev > 0 ? Math.round(qNet / qRev * 100) : null;
+    const hasData = qRev > 0 || qExp > 0;
+    qLabels.push(q.label);
+    qRevData.push(Math.round(qRev));
+    qExpData.push(Math.round(qExp));
+    qRows += `<tr style="opacity:${hasData?1:0.38}">
+      <td>
+        <span style="font-weight:600;color:var(--ink)">${q.label}</span>
+        <span style="font-size:11px;color:var(--ink3);margin-left:6px">${q.name}</span>
+      </td>
+      <td class="pos">${hasData?fmtFull(qRev):'—'}</td>
+      <td class="neg">${hasData?fmtFull(qExp):'—'}</td>
+      <td style="font-weight:600;color:${qNet>=0?'var(--green)':'var(--red)'}">${hasData?fmtFull(qNet):'—'}</td>
+      <td style="font-weight:500;color:${qNet>=0?'var(--green)':'var(--red)'}">${qMg!==null&&hasData?qMg+'%':'—'}</td>
+    </tr>`;
+  });
+  document.getElementById('quarterly-table-body').innerHTML = qRows;
+
+  // Quarterly chart
+  if (quarterlyChartInst) quarterlyChartInst.destroy();
+  quarterlyChartInst = new Chart(document.getElementById('quarterlyChart'), {
+    type: 'bar',
+    data: {
+      labels: qLabels,
+      datasets: [
+        { label:'Revenue',  data:qRevData, backgroundColor:'rgba(82,183,136,0.55)', borderColor:'#2d6a4f', borderWidth:1, borderRadius:6 },
+        { label:'Expenses', data:qExpData, backgroundColor:'rgba(224,49,49,0.4)',   borderColor:'#9b2226', borderWidth:1, borderRadius:6 }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ callbacks:{ label: ctx => ctx.dataset.label+': ₦'+Math.round(ctx.raw).toLocaleString() } }
+      },
+      scales:{
+        x:{ grid:{ display:false }, ticks:{ font:{ size:12, weight:'500' } } },
+        y:{ grid:{ color:'rgba(0,0,0,0.05)' }, ticks:{ callback: v => { const a=Math.abs(v); return '₦'+(a>=1000000?(a/1000000).toFixed(1)+'M':a>=1000?(a/1000).toFixed(0)+'K':a); }, font:{ size:11 } } }
       }
     }
   });
